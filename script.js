@@ -1,3 +1,5 @@
+
+const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxdQyx2wFGyxQ4wuHzKp3_lh80h0ZczEoLGtc1MSCi5OsRMEABjHySqJ9ZtHoPFgNfs-g/exec";
 // POSITIONS & CANDIDATES
     const POSITIONS = {
         president: { name: "President", candidates: [
