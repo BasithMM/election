@@ -28,9 +28,27 @@ const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbw_1W
     let currentTab = "president";
     const tabOrder = ["president", "secretary", "treasurer"];
 
-    // Audio
-    function playClickSound() { try { const ctx = new (window.AudioContext||window.webkitAudioContext)(); const o=ctx.createOscillator(); const g=ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.frequency.value=720; g.gain.value=0.1; o.start(); g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+0.2); o.stop(ctx.currentTime+0.15); } catch(e){} }
-    function playSuccessAudio() { try { const ctx = new (window.AudioContext||window.webkitAudioContext)(); const g=ctx.createGain(); g.connect(ctx.destination); g.gain.value=0.15; [880,1046,1318].forEach((freq,i)=>{ const o=ctx.createOscillator(); o.frequency.value=freq; o.type="sine"; o.connect(g); o.start(ctx.currentTime+i*0.3); o.stop(ctx.currentTime+i*0.6); }); g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+2.5); } catch(e){} }
+   // Audio (MP3 version)
+const clickSound = new Audio();
+const successSound = new Audio("sound/succsses.mp4");
+
+// Optional settings
+clickSound.volume = 0.5;
+successSound.volume = 0.7;
+
+function playClickSound() {
+    try {
+        clickSound.currentTime = 0; // restart sound
+        clickSound.play().catch(() => {});
+    } catch (e) {}
+}
+
+function playSuccessAudio() {
+    try {
+        successSound.currentTime = 0;
+        successSound.play().catch(() => {});
+    } catch (e) {}
+}
 
     // Excel Storage
     function saveToExcel() {
