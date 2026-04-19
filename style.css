@@ -11,7 +11,7 @@
         .app-container { 
             max-width: 1400px; 
             margin: 0 auto; }
-            
+
         .main-header {
             background: linear-gradient(135deg, #1a2a3a 0%, #0f1e2c 100%);
             border-radius: 28px;
@@ -49,6 +49,7 @@
             align-items: center;
             gap: 10px;
         }
+        
         .dashboard-access-btn:hover { background: #ffd966; 
             color: #1a2a3a; }
         .glass-card {
@@ -57,6 +58,7 @@
             padding: 2rem;
             box-shadow: 0 25px 45px -12px rgba(0,0,0,0.2);
         }
+
         /* Tab Navigation for Positions */
         .position-tabs {
             display: flex;
@@ -66,6 +68,7 @@
             padding: 0.5rem;
             border-radius: 60px;
         }
+
         .pos-tab {
             flex: 1;
             padding: 14px;
@@ -77,17 +80,20 @@
             transition: 0.2s;
             font-size: 1rem;
         }
+
         .pos-tab.active {
             background: linear-gradient(95deg, #1f6e43, #0f8b5e);
             color: white;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
+
         .candidates-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
             gap: 1.5rem;
             margin: 1.5rem 0;
         }
+
         .candidate-card {
             background: white;
             border-radius: 24px;
@@ -99,11 +105,13 @@
             cursor: pointer;
             border: 2px solid transparent;
         }
+
         .candidate-card.selected {
             border-color: #1f6e43;
             background: #f0fdf4;
             box-shadow: 0 12px 24px rgba(31,110,67,0.2);
         }
+
         .candidate-photo {
             width: 100px;
             height: 100px;
@@ -112,6 +120,7 @@
             margin: 0 auto 10px;
             border: 3px solid #e2e8f0;
         }
+        
         .party-logo { 
             width: 40px; 
             height: 40px; 
@@ -127,6 +136,7 @@
             margin-top: 2rem;
             gap: 1rem;
         }
+
         .btn-primary, .btn-secondary {
             padding: 12px 28px;
             border-radius: 50px;
@@ -134,6 +144,7 @@
             border: none;
             cursor: pointer;
         }
+
         .btn-primary { 
             background: linear-gradient(95deg, #1f6e43, #0f8b5e); 
             color: white; }
@@ -152,6 +163,7 @@
             border-radius: 50px;
             margin: 15px 0;
         }
+
         /* Dashboard Styles */
         .stats-grid {
             display: flex;
@@ -159,6 +171,7 @@
             flex-wrap: wrap;
             margin-bottom: 2rem;
         }
+
         .stat-card {
             background: linear-gradient(135deg, #ffffff, #f9fcff);
             flex: 1;
@@ -168,6 +181,7 @@
             text-align: center;
             border: 1px solid #e0edf2;
         }
+
         .stat-number { 
             font-size: 2rem; 
             font-weight: 800; 
@@ -181,6 +195,7 @@
             border-radius: 20px;
             overflow: hidden;
         }
+
         .result-table th, .result-table td { 
             padding: 12px; 
             border-bottom: 1px solid #e2edf2;
@@ -207,6 +222,7 @@
             border-radius: 24px; }
 
         canvas { max-height: 250px; }
+
         .modal-overlay {
             position: fixed; top: 0; 
             left: 0; width: 100%; 
@@ -220,6 +236,7 @@
             visibility: hidden; 
             opacity: 0; transition: all 0.3s;
         }
+
         .modal-overlay.active { 
             visibility: visible; 
             opacity: 1; }
@@ -232,6 +249,7 @@
             max-width: 420px; 
             text-align: center;
         }
+
         .modal-card input { 
             width: 100%; 
             margin: 12px 0; 

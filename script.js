@@ -177,7 +177,9 @@ const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxdQy
         let presWinner = Object.entries(counts.pres).sort((a,b)=>b[1]-a[1])[0];
         let secWinner = Object.entries(counts.sec).sort((a,b)=>b[1]-a[1])[0];
         let treasWinner = Object.entries(counts.treas).sort((a,b)=>b[1]-a[1])[0];
-        document.getElementById("dashStats").innerHTML = `<div class="stats-grid"><div class="stat-card"><div class="stat-number">${totalVoters}</div><div>Total Votes Cast</div></div><div class="stat-card"><div class="stat-number">${totalUnique}</div><div>Unique Voters</div></div><div class="stat-card"><div class="stat-number">${presWinner?.[0]||'—'}</div><div>🏆 President Leader</div></div><div class="stat-card"><div class="stat-number">${secWinner?.[0]||'—'}</div><div>📝 Secretary Leader</div></div><div class="stat-card"><div class="stat-number">${treasWinner?.[0]||'—'}</div><div>💰 Treasurer Leader</div></div></div>`;
+        document.getElementById("dashStats").innerHTML = `<div class="stats-grid"><div class="stat-card"><div class="stat-number">${totalVoters}</div><div>Total Votes Cast</div></div><div class="stat-card"><div class="stat-number">${totalUnique}</div><div>Unique Voters</div></div><div class="stat-card"><div class="stat-number">${presWinner?.[0]||'—'}</div><div>President Leader</div></div><div class="stat-card"><div class="stat-number">${secWinner?.[0]||'—'}
+                                                          </div><div>Secretary Leader</div></div><div class="stat-card"><div class="stat-number">${treasWinner?.[0]||'—'}
+                                                          </div><div>Treasurer Leader</div></div></div>`;
         let tableHtml = `<table class="result-table"><thead><tr><th>Position</th><th>Candidate</th><th>Party</th><th>Votes</th></tr></thead><tbody>`;
         for(let pos of ['president','secretary','treasurer']){
             let cands = POSITIONS[pos].candidates;
