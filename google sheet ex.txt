@@ -1,6 +1,3 @@
-// ============ GOOGLE APPS SCRIPT CODE ============
-// Deploy as Web App to enable data storage from HTML page
-
 var sheetName = "Votes";
 
 function doGet(e) {
