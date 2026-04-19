@@ -39,16 +39,16 @@ const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxdQyx2wFGyxQ
         }
         // Fallback default candidates
         POSITIONS.president.candidates = [
-            { id: "p1", name: "Aisha Rahman", party: "Progressive", photo: "https://randomuser.me/api/portraits/women/68.jpg", logo: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png" },
-            { id: "p2", name: "Omar Farooq", party: "Unity", photo: "https://randomuser.me/api/portraits/men/32.jpg", logo: "https://cdn-icons-png.flaticon.com/512/3069/3069174.png" }
+            { id: "p1", name: "Aisha Rahman", party: "Progressive", photo: "#", logo: "#" },
+            { id: "p2", name: "Omar Farooq", party: "Unity", photo: "#", logo: "#" }
         ];
         POSITIONS.secretary.candidates = [
-            { id: "s1", name: "Zainab Malik", party: "Students First", photo: "https://randomuser.me/api/portraits/women/44.jpg", logo: "https://cdn-icons-png.flaticon.com/512/1946/1946484.png" },
-            { id: "s2", name: "Rahul Verma", party: "Campus Voice", photo: "https://randomuser.me/api/portraits/men/45.jpg", logo: "https://cdn-icons-png.flaticon.com/512/2972/2972674.png" }
+            { id: "s1", name: "Zainab Malik", party: "Students First", photo: "#", logo: "#" },
+            { id: "s2", name: "Rahul Verma", party: "Campus Voice", photo: "#", logo: "#" }
         ];
         POSITIONS.treasurer.candidates = [
-            { id: "t1", name: "Fatima Khan", party: "Integrity", photo: "https://randomuser.me/api/portraits/women/90.jpg", logo: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png" },
-            { id: "t2", name: "Yusuf Ibrahim", party: "Trust", photo: "https://randomuser.me/api/portraits/men/75.jpg", logo: "https://cdn-icons-png.flaticon.com/512/3069/3069174.png" }
+            { id: "t1", name: "Fatima Khan", party: "Integrity", photo: "#", logo: "#" },
+            { id: "t2", name: "Yusuf Ibrahim", party: "Trust", photo: "#", logo: "#" }
         ];
         return true;
     }
