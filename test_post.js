@@ -5,7 +5,7 @@ for (const key in voteData) {
     formData.append(key, voteData[key]);
 }
 
-fetch("https://script.google.com/macros/s/AKfycbwKP3DJyVOg3RdfT9Z4K7fjcj4H1M9o4Q7QkQ7rHfc34SjEirOEvU5xBT-jw4WLUI_w7Q/exec", {
+fetch("https://script.google.com/macros/s/AKfycbyMT54QiFNu--RAjXk7gJDJ4MPppSKNEnXKSB7-ip8cgEa28qV1NgtSdgeO5SaMTTo/exec", {
     method: "POST",
     body: formData
 })
