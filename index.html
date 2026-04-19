@@ -2,481 +2,84 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Alhidaya Election Commission | Multi-Position Voting System</title>
-    <!-- SheetJS (XLSX) -->
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-    <!-- Chart.js for Graphs -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alhidaya Election System</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(145deg, #f0f4f8 0%, #e2e8f0 100%);
-            min-height: 100vh;
-            padding: 24px;
-        }
-        .app-container { max-width: 1400px; margin: 0 auto; }
-        .main-header {
-            background: linear-gradient(135deg, #1a2a3a 0%, #0f1e2c 100%);
-            border-radius: 28px;
-            padding: 1.2rem 2rem;
-            margin-bottom: 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
-            box-shadow: 0 20px 35px -10px rgba(0,0,0,0.2);
-        }
-        .logo-area h1 { color: white; font-size: 1.6rem; }
-        .logo-area h1 i { color: #ffd966; margin-right: 12px; }
-        .logo-area p { color: #a0c4e2; font-size: 0.8rem; margin-top: 4px; }
-        .dashboard-access-btn {
-            background: rgba(255,255,255,0.12);
-            border: 1px solid rgba(255,215,0,0.4);
-            padding: 12px 28px;
-            border-radius: 50px;
-            color: #ffd966;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .dashboard-access-btn:hover { background: #ffd966; color: #1a2a3a; }
-        .glass-card {
-            background: rgba(255,255,255,0.96);
-            border-radius: 32px;
-            padding: 2rem;
-            box-shadow: 0 25px 45px -12px rgba(0,0,0,0.2);
-        }
-        /* Tab Navigation for Positions */
-        .position-tabs {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            background: #f1f5f9;
-            padding: 0.5rem;
-            border-radius: 60px;
-        }
-        .pos-tab {
-            flex: 1;
-            padding: 14px;
-            border: none;
-            background: transparent;
-            font-weight: 700;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: 0.2s;
-            font-size: 1rem;
-        }
-        .pos-tab.active {
-            background: linear-gradient(95deg, #1f6e43, #0f8b5e);
-            color: white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        .candidates-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 1.5rem;
-            margin: 1.5rem 0;
-        }
-        .candidate-card {
-            background: white;
-            border-radius: 24px;
-            overflow: hidden;
-            text-align: center;
-            padding: 1.2rem;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-            transition: 0.2s;
-            cursor: pointer;
-            border: 2px solid transparent;
-        }
-        .candidate-card.selected {
-            border-color: #1f6e43;
-            background: #f0fdf4;
-            box-shadow: 0 12px 24px rgba(31,110,67,0.2);
-        }
-        .candidate-photo {
-            width: 100px;
-            height: 100px;
-            object-fit: cover;
-            border-radius: 50%;
-            margin: 0 auto 10px;
-            border: 3px solid #e2e8f0;
-        }
-        .party-logo { width: 40px; height: 40px; margin: 8px auto; }
-        .candidate-name { font-weight: 800; font-size: 1.1rem; }
-        .nav-buttons {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 2rem;
-            gap: 1rem;
-        }
-        .btn-primary, .btn-secondary {
-            padding: 12px 28px;
-            border-radius: 50px;
-            font-weight: 700;
-            border: none;
-            cursor: pointer;
-        }
-        .btn-primary { background: linear-gradient(95deg, #1f6e43, #0f8b5e); color: white; }
-        .btn-secondary { background: #475569; color: white; }
-        .btn-primary:disabled, .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
-        .info-message {
-            background: #e1f0fa;
-            padding: 12px 20px;
-            border-radius: 50px;
-            margin: 15px 0;
-        }
-        /* Dashboard Styles */
-        .stats-grid {
-            display: flex;
-            gap: 1.2rem;
-            flex-wrap: wrap;
-            margin-bottom: 2rem;
-        }
-        .stat-card {
-            background: linear-gradient(135deg, #ffffff, #f9fcff);
-            flex: 1;
-            min-width: 150px;
-            border-radius: 24px;
-            padding: 1.2rem;
-            text-align: center;
-            border: 1px solid #e0edf2;
-        }
-        .stat-number { font-size: 2rem; font-weight: 800; color: #1f6e43; }
-        .result-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 20px;
-            overflow: hidden;
-        }
-        .result-table th, .result-table td { padding: 12px; border-bottom: 1px solid #e2edf2; text-align: left; }
-        .vote-badge { background: #1e6f5c; color: white; padding: 4px 12px; border-radius: 50px; display: inline-block; }
-        .chart-container { display: flex; flex-wrap: wrap; gap: 2rem; justify-content: center; margin: 2rem 0; }
-        .chart-box { flex: 1; min-width: 250px; background: white; padding: 1rem; border-radius: 24px; }
-        canvas { max-height: 250px; }
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
-            z-index: 2000; display: flex; justify-content: center; align-items: center;
-            visibility: hidden; opacity: 0; transition: all 0.3s;
-        }
-        .modal-overlay.active { visibility: visible; opacity: 1; }
-        .modal-card {
-            background: white; border-radius: 40px; padding: 2rem;
-            width: 90%; max-width: 420px; text-align: center;
-        }
-        .modal-card input { width: 100%; margin: 12px 0; padding: 14px; border-radius: 60px; border: 2px solid #dceef5; }
-        .success-popup {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
-            z-index: 3000; display: flex; justify-content: center; align-items: center;
-            visibility: hidden; opacity: 0; transition: all 0.3s;
-        }
-        .success-popup.active { visibility: visible; opacity: 1; }
-        .popup-content {
-            background: linear-gradient(145deg, #ffffff, #f9fef9);
-            border-radius: 48px; padding: 2rem; text-align: center; max-width: 400px;
-            animation: popupBounce 0.4s ease;
-        }
-        @keyframes popupBounce {
-            0% { transform: scale(0.7); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        footer { text-align: center; margin-top: 2rem; color: #5a6e7c; font-size: 0.8rem; }
-        @media (max-width: 700px) { .glass-card { padding: 1rem; } }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="app-container">
-    <div class="main-header">
-        <div class="logo-area">
+<div class="container">
+    <div class="header">
+        <div>
             <h1><i class="fas fa-landmark"></i> Alhidaya Election Commission</h1>
-            <p><i class="fas fa-file-excel"></i> Multi-Position Voting | President • Secretary • Treasurer</p>
+            <p style="color: #a0c4e2; margin-top: 5px;">Multi-Position Voting | Google Sheets Storage</p>
         </div>
-        <button class="dashboard-access-btn" id="openDashboardBtn"><i class="fas fa-chalkboard-user"></i> Dashboard Access</button>
+        <div style="display: flex; gap: 12px;">
+            <div class="google-badge"><i class="fab fa-google"></i> Google Sheets Sync</div>
+            <button class="dashboard-btn" id="openDashboardBtn"><i class="fas fa-chart-line"></i> Dashboard</button>
+        </div>
     </div>
 
-    <!-- Voting Page -->
-    <div id="votingPageContainer">
-        <div class="glass-card">
-            <div id="voterAuthArea">
-                <div style="max-width: 500px; margin: 0 auto; text-align: center;">
-                    <i class="fas fa-id-card" style="font-size: 2.8rem; color: #2c7da0;"></i>
-                    <h2>Voter Authentication</h2>
-                    <input type="text" id="voterName" class="input-modern" placeholder="Full Name" style="width:100%; margin: 15px 0; padding: 14px; border-radius:60px; border:2px solid #e2edf2;">
-                    <input type="text" id="admissionNo" placeholder="Admission Number" style="width:100%; padding:14px; border-radius:60px; border:2px solid #e2edf2;">
-                    <button class="btn-primary" id="authenticateBtn" style="margin-top: 20px;"><i class="fas fa-check-circle"></i> Verify & Start Voting</button>
-                    <div id="authError" class="info-message" style="display:none; background:#ffe0db;"></div>
-                </div>
+    <!-- Voting Section -->
+    <div class="glass-card">
+        <div id="authSection">
+            <div style="max-width: 500px; margin: 0 auto; text-align: center;">
+                <i class="fas fa-id-card" style="font-size: 3rem; color: #2c7da0;"></i>
+                <h2>Voter Authentication</h2>
+                <input type="text" id="voterName" class="input-modern" placeholder="Full Name">
+                <input type="text" id="admissionNo" class="input-modern" placeholder="Admission Number">
+                <button class="btn-primary" id="authBtn"><i class="fas fa-check"></i>Vote</button>
+                <div id="authError" class="info-message" style="display:none; background:#ffe0db;"></div>
             </div>
-            <div id="votingPanelArea" style="display: none;">
-                <div id="voterWelcomeMsg" class="info-message" style="background:#d9f0ec;"></div>
-                
-                <!-- Position Tabs -->
-                <div class="position-tabs">
-                    <button class="pos-tab active" data-pos="president">👑 President</button>
-                    <button class="pos-tab" data-pos="secretary">📝 Secretary</button>
-                    <button class="pos-tab" data-pos="treasurer">💰 Treasurer</button>
-                </div>
-                
-                <div id="candidatesContainer" class="candidates-grid"></div>
-                
-                <div class="nav-buttons">
-                    <button id="prevTabBtn" class="btn-secondary" disabled><i class="fas fa-arrow-left"></i> Previous</button>
-                    <button id="nextTabBtn" class="btn-primary">Next <i class="fas fa-arrow-right"></i></button>
-                </div>
-                <div id="voteFeedback" style="margin-top: 15px;"></div>
-                <button id="resetVoteBtn" class="btn-secondary" style="margin-top: 15px; width:100%;"><i class="fas fa-arrow-left"></i> Back to Authentication</button>
+        </div>
+
+        <div id="votingSection" style="display: none;">
+            <div id="welcomeMsg" class="info-message" style="background:#d9f0ec;"></div>
+            <div class="position-tabs" id="tabsContainer"></div>
+            <div id="candidatesContainer" class="candidates-grid"></div>
+            <div class="nav-buttons">
+                <button id="prevBtn" class="btn-secondary" style="display: none;"><i class="fas fa-arrow-left"></i> Previous</button>
+                <button id="nextBtn" class="btn-primary">Next→</button>
             </div>
         </div>
     </div>
-    <footer><i class="fas fa-volume-up"></i> Select one candidate per position | Auto-save after all three selections</footer>
+    <footer><i class="fab fa-google"></i> Data stored in Google Sheets | Real-time sync | Secure voting</footer>
 </div>
 
 <!-- Success Popup -->
-<div id="successPopup" class="success-popup"><div class="popup-content"><i class="fas fa-check-circle" style="font-size:3rem; color:#1f6e43;"></i><h2>✓ Vote Cast Successfully!</h2><p>All your selections have been recorded.</p><div id="popupTimer">Redirecting in 3 seconds...</div></div></div>
+<div id="successPopup" class="success-popup">
+    <div class="popup-content">
+        <i class="fas fa-check-circle" style="font-size: 3rem; color: #1f6e43;"></i>
+        <h2>✓ Votes Submitted!</h2>
+        <p>Your votes have been recorded in Google Sheets.</p>
+        <div id="popupTimer">Redirecting...</div>
+    </div>
+</div>
 
-<!-- Dashboard Modal & Panel -->
-<div id="dashboardModal" class="modal-overlay"><div class="modal-card"><i class="fas fa-lock" style="font-size:2rem;"></i><h2>Admin Dashboard</h2><input type="text" id="adminUsername" placeholder="Username"><input type="password" id="adminPassword" placeholder="Password"><button class="btn-primary" id="submitDashboardLogin">Unlock</button><div id="dashboardLoginError" class="error-text"></div><button id="closeModalBtn">Close</button></div></div>
-<div id="dashboardPanel" class="modal-overlay" style="z-index:2100; background:rgba(0,0,0,0.92);"><div style="width:95%; max-width:1400px; max-height:90vh; overflow-y:auto; background:#f8fafc; border-radius:40px; padding:25px;"><div style="display:flex; justify-content:space-between;"><h2><i class="fas fa-chart-line"></i> Election Dashboard</h2><div><button id="refreshExcelBtn" class="btn-secondary">Refresh Excel</button><button id="closeDashboardPanelBtn" class="btn-secondary">Close</button></div></div><div class="chart-container"><div class="chart-box"><canvas id="presidentChart"></canvas><h4>President Race</h4></div><div class="chart-box"><canvas id="secretaryChart"></canvas><h4>Secretary Race</h4></div><div class="chart-box"><canvas id="treasurerChart"></canvas><h4>Treasurer Race</h4></div></div><div id="dashStats"></div><div id="dashResultsTable"></div><button id="downloadVoterExcelBtn" class="btn-primary" style="margin-top:20px;">Download Voter List (Excel)</button></div></div>
+<!-- Dashboard Modal -->
+<div id="dashboardModal" class="modal-overlay">
+    <div class="modal-card">
+        <i class="fas fa-lock" style="font-size: 2rem;"></i>
+        <h2>Admin Dashboard Access</h2>
+        <input type="text" id="adminUser" class="input-modern" placeholder="Username">
+        <input type="password" id="adminPass" class="input-modern" placeholder="Password">
+        <button class="btn-primary" id="dashLoginBtn">Unlock</button>
+        <div id="dashError" style="color: red; margin-top: 10px;"></div>
+        <button id="closeDashModal" style="margin-top: 15px; background: none; border: none; cursor: pointer;">Close</button>
+    </div>
+</div>
 
-<script>
-    // POSITIONS & CANDIDATES
-    const POSITIONS = {
-        president: { name: "President", candidates: [
-            { id: "p1", name: "Basith", party: "Progressive Alliance", photo: "https://randomuser.me/api/portraits/women/68.jpg", logo: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png" },
-            { id: "p2", name: "Omar Farooq", party: "Unity Movement", photo: "https://randomuser.me/api/portraits/men/32.jpg", logo: "https://cdn-icons-png.flaticon.com/512/3069/3069174.png" }
-        ]},
-        secretary: { name: "Secretary", candidates: [
-            { id: "s1", name: "Zainab Malik", party: "Students First", photo: "https://randomuser.me/api/portraits/women/44.jpg", logo: "https://cdn-icons-png.flaticon.com/512/1946/1946484.png" },
-            { id: "s2", name: "Hamza Idris", party: "Campus Vision", photo: "https://randomuser.me/api/portraits/men/91.jpg", logo: "https://cdn-icons-png.flaticon.com/512/2972/2972674.png" }
-        ]},
-        treasurer: { name: "Treasurer", candidates: [
-            { id: "t1", name: "Fatima Al Zahra", party: "Economic Reform", photo: "https://randomuser.me/api/portraits/women/89.jpg", logo: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png" },
-            { id: "t2", name: "Bilal Ahmed", party: "Transparency Front", photo: "https://randomuser.me/api/portraits/men/45.jpg", logo: "https://cdn-icons-png.flaticon.com/512/3069/3069174.png" }
-        ]}
-    };
-
-    let voteRecords = []; // each: { admissionNo, voterName, presidentId, presidentName, secretaryId, secretaryName, treasurerId, treasurerName, timestamp }
-    const STORAGE_KEY = "MultiPositionElectionData";
-    let charts = {};
-
-    // Current voting session
-    let currentVoter = null;
-    let selections = { president: null, secretary: null, treasurer: null };
-    let currentTab = "president";
-    const tabOrder = ["president", "secretary", "treasurer"];
-
-    // Audio
-    function playClickSound() { try { const ctx = new (window.AudioContext||window.webkitAudioContext)(); const o=ctx.createOscillator(); const g=ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.frequency.value=720; g.gain.value=0.1; o.start(); g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+0.2); o.stop(ctx.currentTime+0.15); } catch(e){} }
-    function playSuccessAudio() { try { const ctx = new (window.AudioContext||window.webkitAudioContext)(); const g=ctx.createGain(); g.connect(ctx.destination); g.gain.value=0.15; [880,1046,1318].forEach((freq,i)=>{ const o=ctx.createOscillator(); o.frequency.value=freq; o.type="sine"; o.connect(g); o.start(ctx.currentTime+i*0.3); o.stop(ctx.currentTime+i*0.6); }); g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+2.5); } catch(e){} }
-
-    // Excel Storage
-    function saveToExcel() {
-        const sheetData = voteRecords.map(v => ({ AdmissionNumber: v.admissionNo, VoterName: v.voterName, PresidentVote: v.presidentName, SecretaryVote: v.secretaryName, TreasurerVote: v.treasurerName, Timestamp: v.timestamp }));
-        const ws = XLSX.utils.json_to_sheet(sheetData);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "MultiPositionVotes");
-        localStorage.setItem(STORAGE_KEY, XLSX.write(wb, { type: 'base64' }));
-    }
-    async function loadFromStorage() {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if(stored) { try { const wb = XLSX.read(atob(stored), { type: 'binary' }); const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]); voteRecords = rows.map(r => ({ admissionNo: r.AdmissionNumber, voterName: r.VoterName, presidentName: r.PresidentVote, secretaryName: r.SecretaryVote, treasurerName: r.TreasurerVote, timestamp: r.Timestamp })); } catch(e){} }
-        else voteRecords = [];
-    }
-
-    function hasVoted(admission) { return voteRecords.some(v => v.admissionNo === admission); }
-
-    async function submitFinalVote() {
-        if(!selections.president || !selections.secretary || !selections.treasurer) return false;
-        if(hasVoted(currentVoter.admission)) return { success: false, message: "Already voted!" };
-        voteRecords.push({
-            admissionNo: currentVoter.admission, voterName: currentVoter.name,
-            presidentName: selections.president.name, secretaryName: selections.secretary.name, treasurerName: selections.treasurer.name,
-            timestamp: new Date().toLocaleString()
-        });
-        saveToExcel();
-        return { success: true };
-    }
-
-    // Render candidates for current tab
-    function renderCandidates() {
-        const container = document.getElementById("candidatesContainer");
-        const position = POSITIONS[currentTab];
-        if(!position) return;
-        container.innerHTML = "";
-        position.candidates.forEach(cand => {
-            const isSelected = selections[currentTab] && selections[currentTab].id === cand.id;
-            const card = document.createElement("div");
-            card.className = `candidate-card ${isSelected ? 'selected' : ''}`;
-            card.innerHTML = `
-                <img class="candidate-photo" src="${cand.photo}" onerror="this.src='https://randomuser.me/api/portraits/lego/1.jpg'">
-                <img class="party-logo" src="${cand.logo}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png'">
-                <div class="candidate-name">${cand.name}</div>
-                <div style="color:#2c7da0;">${cand.party}</div>
-                <button class="btn-secondary" style="margin-top:12px; padding:8px 20px;">${isSelected ? 'Selected' : 'Select'}</button>
-            `;
-            card.addEventListener("click", () => {
-                selections[currentTab] = cand;
-                renderCandidates();
-                playClickSound();
-                // Auto move to next tab after selection if not last
-                const currentIdx = tabOrder.indexOf(currentTab);
-                if(currentIdx < tabOrder.length-1) {
-                    setTimeout(() => goToTab(tabOrder[currentIdx+1]), 300);
-                }
-            });
-            container.appendChild(card);
-        });
-        // Update next button text
-        const nextBtn = document.getElementById("nextTabBtn");
-        if(currentTab === tabOrder[tabOrder.length-1]) nextBtn.textContent = "Submit All Votes ✓";
-        else nextBtn.textContent = "Next →";
-    }
-
-    function goToTab(tab) {
-        currentTab = tab;
-        document.querySelectorAll(".pos-tab").forEach(btn => { btn.classList.remove("active"); if(btn.dataset.pos === tab) btn.classList.add("active"); });
-        renderCandidates();
-        const prevBtn = document.getElementById("prevTabBtn");
-        const nextBtn = document.getElementById("nextTabBtn");
-        prevBtn.disabled = (tabOrder.indexOf(tab) === 0);
-        // Update next button text
-        if(tab === tabOrder[tabOrder.length-1]) nextBtn.textContent = "Submit All Votes ✓";
-        else nextBtn.textContent = "Next →";
-        playClickSound();
-    }
-
-    async function handleNext() {
-        if(!selections[currentTab]) { document.getElementById("voteFeedback").innerHTML = `<div class="info-message" style="background:#ffe0db;">Please select a candidate for ${POSITIONS[currentTab].name} position!</div>`; playClickSound(); return; }
-        const currentIdx = tabOrder.indexOf(currentTab);
-        if(currentIdx === tabOrder.length-1) {
-            // Submit final vote
-            const result = await submitFinalVote();
-            if(result.success) {
-                playSuccessAudio();
-                const popup = document.getElementById("successPopup");
-                const timerDiv = document.getElementById("popupTimer");
-                popup.classList.add("active");
-                let sec=3;
-                timerDiv.textContent = `Redirecting in ${sec} seconds...`;
-                const interval = setInterval(() => { sec--; timerDiv.textContent = `Redirecting in ${sec} seconds...`; if(sec<0){ clearInterval(interval); popup.classList.remove("active"); window.location.reload(); } }, 1000);
-            } else {
-                document.getElementById("voteFeedback").innerHTML = `<div class="info-message" style="background:#ffe0db;">${result.message}</div>`;
-                playClickSound();
-            }
-        } else {
-            goToTab(tabOrder[currentIdx+1]);
-            document.getElementById("voteFeedback").innerHTML = "";
-        }
-    }
-
-    function goPrev() { const idx = tabOrder.indexOf(currentTab); if(idx>0) goToTab(tabOrder[idx-1]); document.getElementById("voteFeedback").innerHTML = ""; }
-
-    function authenticateVoter() {
-        const name = document.getElementById("voterName").value.trim();
-        const admission = document.getElementById("admissionNo").value.trim();
-        const errDiv = document.getElementById("authError");
-        if(!name || !admission) { errDiv.style.display="block"; errDiv.innerHTML="Please fill all fields"; playClickSound(); return; }
-        if(hasVoted(admission)) { errDiv.style.display="block"; errDiv.innerHTML="Already voted!"; playClickSound(); return; }
-        errDiv.style.display="none";
-        currentVoter = { name, admission };
-        selections = { president: null, secretary: null, treasurer: null };
-        currentTab = "president";
-        document.getElementById("voterAuthArea").style.display = "none";
-        document.getElementById("votingPanelArea").style.display = "block";
-        document.getElementById("voterWelcomeMsg").innerHTML = `<i class="fas fa-user-check"></i> Welcome ${name} (${admission}) — Select one candidate per position.`;
-        goToTab("president");
-    }
-
-    function resetAuth() { document.getElementById("voterAuthArea").style.display="block"; document.getElementById("votingPanelArea").style.display="none"; currentVoter=null; document.getElementById("voterName").value=""; document.getElementById("admissionNo").value=""; document.getElementById("authError").style.display="none"; document.getElementById("voteFeedback").innerHTML=""; }
-
-    // Dashboard & Charts
-    function getCountsByPosition() {
-        let pres = {}, sec = {}, treas = {};
-        POSITIONS.president.candidates.forEach(c => pres[c.name]=0);
-        POSITIONS.secretary.candidates.forEach(c => sec[c.name]=0);
-        POSITIONS.treasurer.candidates.forEach(c => treas[c.name]=0);
-        voteRecords.forEach(v => { if(v.presidentName) pres[v.presidentName] = (pres[v.presidentName]||0)+1; if(v.secretaryName) sec[v.secretaryName] = (sec[v.secretaryName]||0)+1; if(v.treasurerName) treas[v.treasurerName] = (treas[v.treasurerName]||0)+1; });
-        return { pres, sec, treas };
-    }
-
-    function updateCharts() {
-        const counts = getCountsByPosition();
-        if(charts.president) charts.president.destroy();
-        if(charts.secretary) charts.secretary.destroy();
-        if(charts.treasurer) charts.treasurer.destroy();
-        charts.president = new Chart(document.getElementById("presidentChart"), { type: 'bar', data: { labels: Object.keys(counts.pres), datasets: [{ label: 'Votes', data: Object.values(counts.pres), backgroundColor: '#1f6e43', borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: true } });
-        charts.secretary = new Chart(document.getElementById("secretaryChart"), { type: 'bar', data: { labels: Object.keys(counts.sec), datasets: [{ label: 'Votes', data: Object.values(counts.sec), backgroundColor: '#2c7da0', borderRadius: 8 }] }, options: { responsive: true } });
-        charts.treasurer = new Chart(document.getElementById("treasurerChart"), { type: 'bar', data: { labels: Object.keys(counts.treas), datasets: [{ label: 'Votes', data: Object.values(counts.treas), backgroundColor: '#e67e22', borderRadius: 8 }] }, options: { responsive: true } });
-    }
-
-    function renderDashboard() {
-        const counts = getCountsByPosition();
-        const totalVoters = voteRecords.length;
-        const totalUnique = new Set(voteRecords.map(v=>v.admissionNo)).size;
-        let presWinner = Object.entries(counts.pres).sort((a,b)=>b[1]-a[1])[0];
-        let secWinner = Object.entries(counts.sec).sort((a,b)=>b[1]-a[1])[0];
-        let treasWinner = Object.entries(counts.treas).sort((a,b)=>b[1]-a[1])[0];
-        document.getElementById("dashStats").innerHTML = `<div class="stats-grid"><div class="stat-card"><div class="stat-number">${totalVoters}</div><div>Total Votes Cast</div></div><div class="stat-card"><div class="stat-number">${totalUnique}</div><div>Unique Voters</div></div><div class="stat-card"><div class="stat-number">${presWinner?.[0]||'—'}</div><div>🏆 President Leader</div></div><div class="stat-card"><div class="stat-number">${secWinner?.[0]||'—'}</div><div>📝 Secretary Leader</div></div><div class="stat-card"><div class="stat-number">${treasWinner?.[0]||'—'}</div><div>💰 Treasurer Leader</div></div></div>`;
-        let tableHtml = `<table class="result-table"><thead><tr><th>Position</th><th>Candidate</th><th>Party</th><th>Votes</th></tr></thead><tbody>`;
-        for(let pos of ['president','secretary','treasurer']){
-            let cands = POSITIONS[pos].candidates;
-            let countMap = pos==='president'?counts.pres:(pos==='secretary'?counts.sec:counts.treas);
-            cands.forEach(c=>{ tableHtml += `<tr><td>${POSITIONS[pos].name}</td><td>${c.name}</td><td>${c.party}</td><td><span class="vote-badge">${countMap[c.name]||0}</span></td></tr>`; });
-        }
-        tableHtml += `</tbody></table>`;
-        document.getElementById("dashResultsTable").innerHTML = tableHtml;
-        updateCharts();
-    }
-
-    function downloadVoterExcel() {
-        const exportData = voteRecords.map(v => ({ "Voter Name": v.voterName, "Admission Number": v.admissionNo, "President Vote": v.presidentName, "Secretary Vote": v.secretaryName, "Treasurer Vote": v.treasurerName, "Timestamp": v.timestamp }));
-        const ws = XLSX.utils.json_to_sheet(exportData);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "VoterList");
-        XLSX.writeFile(wb, `VoterList_MultiPosition_${new Date().toISOString().slice(0,19)}.xlsx`);
-        playClickSound();
-    }
-
-    // Dashboard Modal Logic
-    const modalOverlay = document.getElementById("dashboardModal");
-    const dashboardPanel = document.getElementById("dashboardPanel");
-    function openDashboardLogin() { modalOverlay.classList.add("active"); playClickSound(); }
-    function closeLoginModal() { modalOverlay.classList.remove("active"); }
-    function closeDashboardPanel() { dashboardPanel.classList.remove("active"); }
-    function validateDashboardLogin() {
-        const user = document.getElementById("adminUsername").value, pass = document.getElementById("adminPassword").value;
-        if(user === "alhidaya" && pass === "hudaelection") {
-            modalOverlay.classList.remove("active");
-            loadFromStorage().then(()=>{ renderDashboard(); dashboardPanel.classList.add("active"); playClickSound(); });
-        } else { document.getElementById("dashboardLoginError").innerText = "Invalid credentials!"; playClickSound(); }
-    }
-    function refreshExcel() { localStorage.removeItem(STORAGE_KEY); loadFromStorage().then(()=>{ renderDashboard(); alert("Excel data refreshed"); }); }
-
-    // Event Listeners
-    document.getElementById("openDashboardBtn").addEventListener("click", openDashboardLogin);
-    document.getElementById("submitDashboardLogin").addEventListener("click", validateDashboardLogin);
-    document.getElementById("closeModalBtn").addEventListener("click", closeLoginModal);
-    document.getElementById("closeDashboardPanelBtn").addEventListener("click", closeDashboardPanel);
-    document.getElementById("refreshExcelBtn").addEventListener("click", refreshExcel);
-    document.getElementById("downloadVoterExcelBtn").addEventListener("click", downloadVoterExcel);
-    document.getElementById("authenticateBtn").addEventListener("click", authenticateVoter);
-    document.getElementById("resetVoteBtn").addEventListener("click", resetAuth);
-    document.getElementById("nextTabBtn").addEventListener("click", handleNext);
-    document.getElementById("prevTabBtn").addEventListener("click", goPrev);
-    document.querySelectorAll(".pos-tab").forEach(btn => { btn.addEventListener("click", (e) => { goToTab(btn.dataset.pos); }); });
-
-    window.addEventListener("DOMContentLoaded", async () => { await loadFromStorage(); resetAuth(); });
-</script>
+<!-- Dashboard Panel -->
+<div id="dashboardPanel" class="modal-overlay" style="z-index: 2100; background: rgba(0,0,0,0.95);">
+    <div style="width: 95%; max-width: 1300px; max-height: 90vh; overflow-y: auto; background: #f8fafc; border-radius: 40px; padding: 25px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2><i class="fas fa-chart-line"></i> Election Dashboard <span style="font-size: 0.8rem; background: #0F9D58; color: white; padding: 4px 12px; border-radius: 20px;">Google Sheets Live</span></h2>
+            <button id="closeDashPanel" class="btn-secondary">Close</button>
+        </div>
+        <div id="dashboardContent"></div>
+    </div>
+</div>
+<script src="script.js"></script>
 </body>
 </html>

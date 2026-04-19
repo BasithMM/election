@@ -1,0 +1,157 @@
+// ============ GOOGLE APPS SCRIPT CODE ============
+// Deploy as Web App to enable data storage from HTML page
+
+var sheetName = "Votes";
+var candidatesSheetName = "Candidates";
+
+function doGet() {
+  return ContentService.createTextOutput(JSON.stringify({ status: "active" }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var action = data.action;
+    
+    if (action === "saveVote") {
+      return saveVote(data);
+    } else if (action === "getResults") {
+      return getResults();
+    } else if (action === "getCandidates") {
+      return getCandidates();
+    } else if (action === "saveBulkVote") {
+      return saveBulkVote(data);
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: "Unknown action" }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(error) {
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: error.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function saveVote(data) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  if (!sheet) {
+    sheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet(sheetName);
+    sheet.appendRow(["Timestamp", "AdmissionNumber", "VoterName", "PresidentVote", "SecretaryVote", "TreasurerVote", "Status"]);
+  }
+  
+  // Check if already voted
+  var existingData = sheet.getDataRange().getValues();
+  for (var i = 1; i < existingData.length; i++) {
+    if (existingData[i][1] === data.admissionNo) {
+      return ContentService.createTextOutput(JSON.stringify({ success: false, error: "Already voted!" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+  
+  sheet.appendRow([
+    new Date().toISOString(),
+    data.admissionNo,
+    data.voterName,
+    data.presidentVote,
+    data.secretaryVote,
+    data.treasurerVote,
+    "Completed"
+  ]);
+  
+  return ContentService.createTextOutput(JSON.stringify({ success: true, message: "Vote saved successfully!" }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function saveBulkVote(data) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  if (!sheet) {
+    sheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet(sheetName);
+    sheet.appendRow(["Timestamp", "AdmissionNumber", "VoterName", "PresidentVote", "SecretaryVote", "TreasurerVote", "Status"]);
+  }
+  
+  // Check if already voted
+  var existingData = sheet.getDataRange().getValues();
+  for (var i = 1; i < existingData.length; i++) {
+    if (existingData[i][1] === data.admissionNo) {
+      return ContentService.createTextOutput(JSON.stringify({ success: false, error: "Already voted!" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+  
+  sheet.appendRow([
+    new Date().toISOString(),
+    data.admissionNo,
+    data.voterName,
+    data.presidentVote,
+    data.secretaryVote,
+    data.treasurerVote,
+    "Completed"
+  ]);
+  
+  return ContentService.createTextOutput(JSON.stringify({ success: true, message: "All votes saved!" }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function getResults() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  if (!sheet) {
+    return ContentService.createTextOutput(JSON.stringify({ success: true, votes: [] }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  var data = sheet.getDataRange().getValues();
+  var votes = [];
+  for (var i = 1; i < data.length; i++) {
+    votes.push({
+      timestamp: data[i][0],
+      admissionNo: data[i][1],
+      voterName: data[i][2],
+      presidentVote: data[i][3],
+      secretaryVote: data[i][4],
+      treasurerVote: data[i][5]
+    });
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify({ success: true, votes: votes }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function getCandidates() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(candidatesSheetName);
+  if (!sheet) {
+    // Initialize default candidates if sheet doesn't exist
+    sheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet(candidatesSheetName);
+    sheet.appendRow(["Position", "CandidateID", "CandidateName", "Party", "PhotoURL", "LogoURL"]);
+    
+    var defaultCandidates = [
+      ["president", "p1", "Aisha Rahman", "Progressive Alliance", "https://randomuser.me/api/portraits/women/68.jpg", "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"],
+      ["president", "p2", "Omar Farooq", "Unity Movement", "https://randomuser.me/api/portraits/men/32.jpg", "https://cdn-icons-png.flaticon.com/512/3069/3069174.png"],
+      ["secretary", "s1", "Zainab Malik", "Students First", "https://randomuser.me/api/portraits/women/44.jpg", "https://cdn-icons-png.flaticon.com/512/1946/1946484.png"],
+      ["secretary", "s2", "Rahul Verma", "Campus Voice", "https://randomuser.me/api/portraits/men/45.jpg", "https://cdn-icons-png.flaticon.com/512/2972/2972674.png"],
+      ["treasurer", "t1", "Fatima Khan", "Integrity Party", "https://randomuser.me/api/portraits/women/90.jpg", "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"],
+      ["treasurer", "t2", "Yusuf Ibrahim", "Trust Movement", "https://randomuser.me/api/portraits/men/75.jpg", "https://cdn-icons-png.flaticon.com/512/3069/3069174.png"]
+    ];
+    
+    for (var i = 0; i < defaultCandidates.length; i++) {
+      sheet.appendRow(defaultCandidates[i]);
+    }
+  }
+  
+  var data = sheet.getDataRange().getValues();
+  var candidates = { president: [], secretary: [], treasurer: [] };
+  for (var i = 1; i < data.length; i++) {
+    var position = data[i][0];
+    if (candidates[position]) {
+      candidates[position].push({
+        id: data[i][1],
+        name: data[i][2],
+        party: data[i][3],
+        photo: data[i][4],
+        logo: data[i][5]
+      });
+    }
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify({ success: true, candidates: candidates }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
