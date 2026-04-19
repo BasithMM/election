@@ -6,19 +6,19 @@ const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbw_1W
     const POSITIONS = {
         president: { name: "President", candidates: [
             { id: "p1", name: "Basith", party: "Progressive Alliance", photo: "#", logo: "#" },
-            { id: "p2", name: "Omar Farooq", party: "Unity Movement", photo: "#", logo: "#" }
+            { id: "p2", name: "Badusha", party: "Unity Movement", photo: "#", logo: "#" }
         ]},
         secretary: { name: "Secretary", candidates: [
-            { id: "s1", name: "Zainab Malik", party: "Students First", photo: "#", logo: "#" },
-            { id: "s2", name: "Hamza Idris", party: "Campus Vision", photo: "#", logo: "#" }
+            { id: "s1", name: "Shahal", party: "Students First", photo: "#", logo: "#" },
+            { id: "s2", name: "Hadi ameen", party: "Campus Vision", photo: "#", logo: "#" }
         ]},
         treasurer: { name: "Treasurer", candidates: [
-            { id: "t1", name: "Fatima Al Zahra", party: "Economic Reform", photo: "#", logo: "#" },
-            { id: "t2", name: "Bilal Ahmed", party: "Transparency Front", photo: "#", logo: "#" }
+            { id: "t1", name: "Riyan", party: "Economic Reform", photo: "#", logo: "#" },
+            { id: "t2", name: "Rizwan", party: "Transparency Front", photo: "#", logo: "#" }
         ]}
     };
 
-    let voteRecords = []; // each: { admissionNo, presidentId, presidentName, secretaryId, secretaryName, treasurerId, treasurerName, timestamp }
+    let voteRecords = []; // each: { admissionNo,voter name, presidentId, presidentName, secretaryId, secretaryName, treasurerId, treasurerName, timestamp }
     const STORAGE_KEY = "MultiPositionElectionData";
     let charts = {};
 
