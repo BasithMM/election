@@ -18,7 +18,7 @@ const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbw_1W
         ]}
     };
 
-    let voteRecords = []; // each: { admissionNo, voterName, presidentId, presidentName, secretaryId, secretaryName, treasurerId, treasurerName, timestamp }
+    let voteRecords = []; // each: { admissionNo, presidentId, presidentName, secretaryId, secretaryName, treasurerId, treasurerName, timestamp }
     const STORAGE_KEY = "MultiPositionElectionData";
     let charts = {};
 
