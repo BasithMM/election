@@ -47,16 +47,45 @@ const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxdQy
     function hasVoted(admission) { return voteRecords.some(v => v.admissionNo === admission); }
 
     async function submitFinalVote() {
-        if(!selections.president || !selections.secretary || !selections.treasurer) return false;
-        if(hasVoted(currentVoter.admission)) return { success: false, message: "Already voted!" };
-        voteRecords.push({
-            admissionNo: currentVoter.admission, voterName: currentVoter.name,
-            presidentName: selections.president.name, secretaryName: selections.secretary.name, treasurerName: selections.treasurer.name,
-            timestamp: new Date().toLocaleString()
+    if(!selections.president || !selections.secretary || !selections.treasurer) return false;
+
+    if(hasVoted(currentVoter.admission)) 
+        return { success: false, message: "Already voted!" };
+
+    const voteData = {
+        admissionNo: currentVoter.admission,
+        voterName: currentVoter.name,
+        presidentName: selections.president.name,
+        secretaryName: selections.secretary.name,
+        treasurerName: selections.treasurer.name,
+        timestamp: new Date().toLocaleString()
+    };
+
+    voteRecords.push(voteData);
+
+    saveToExcel();
+
+    // 🔥 SEND TO GOOGLE SHEETS
+    sendToGoogleSheets(voteData);
+
+    return { success: true };
+}
+    async function sendToGoogleSheets(voteData) {
+    try {
+        const response = await fetch(GOOGLE_SHEETS_WEBHOOK_URL, {
+            method: "POST",
+            mode: "no-cors", // important for Google Apps Script
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(voteData)
         });
-        saveToExcel();
-        return { success: true };
+
+        console.log("Sent to Google Sheets");
+    } catch (error) {
+        console.error("Google Sheets Error:", error);
     }
+}
 
     // Render candidates for current tab
     function renderCandidates() {
