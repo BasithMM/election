@@ -1,6 +1,8 @@
 
-const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxdQyx2wFGyxQ4wuHzKp3_lh80h0ZczEoLGtc1MSCi5OsRMEABjHySqJ9ZtHoPFgNfs-g/exec";
+// const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxdQyx2wFGyxQ4wuHzKp3_lh80h0ZczEoLGtc1MSCi5OsRMEABjHySqJ9ZtHoPFgNfs-g/exec";
+const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyMT54QiFNu--RAjXk7gJDJ4MPppSKNEnXKSB7-ip8cgEa28qV1NgtSdgeO5SaMTTo/exec";
 // POSITIONS & CANDIDATES
+
     const POSITIONS = {
         president: { name: "President", candidates: [
             { id: "p1", name: "Basith", party: "Progressive Alliance", photo: "#", logo: "#" },
@@ -39,6 +41,29 @@ const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxdQy
         localStorage.setItem(STORAGE_KEY, XLSX.write(wb, { type: 'base64' }));
     }
     async function loadFromStorage() {
+        try {
+            // First attempt to grab live data across all devices from Google Sheets
+            const response = await fetch(`${GOOGLE_SHEETS_WEBHOOK_URL}?action=getResults`);
+            const data = await response.json();
+            
+            if (data && data.success && data.votes) {
+                voteRecords = data.votes.map(r => ({
+                    admissionNo: r["Admission Number"],
+                    voterName: r["Voter Name"],
+                    presidentName: r["President Vote"],
+                    secretaryName: r["Secretary Vote"],
+                    treasurerName: r["Treasurer Vote"],
+                    timestamp: r["Timestamp"]
+                }));
+                // Update local storage backup
+                saveToExcel();
+                return; // successfully loaded from network
+            }
+        } catch (error) {
+            console.warn("Failed to load from Google Sheets, using LocalStorage fallback", error);
+        }
+        
+        // Offline Fallback
         const stored = localStorage.getItem(STORAGE_KEY);
         if(stored) { try { const wb = XLSX.read(atob(stored), { type: 'binary' }); const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]); voteRecords = rows.map(r => ({ admissionNo: r.AdmissionNumber, voterName: r.VoterName, presidentName: r.PresidentVote, secretaryName: r.SecretaryVote, treasurerName: r.TreasurerVote, timestamp: r.Timestamp })); } catch(e){} }
         else voteRecords = [];
@@ -71,21 +96,25 @@ const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxdQy
     return { success: true };
 }
     async function sendToGoogleSheets(voteData) {
-    try {
-        const response = await fetch(GOOGLE_SHEETS_WEBHOOK_URL, {
-            method: "POST",
-            mode: "no-cors", // important for Google Apps Script
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(voteData)
-        });
+        try {
+            // Send as URLSearchParams (application/x-www-form-urlencoded)
+            // This guarantees that GAS e.parameter automatically parses the payload.
+            const formData = new URLSearchParams();
+            for (const key in voteData) {
+                if (voteData[key]) formData.append(key, voteData[key]);
+            }
 
-        console.log("Sent to Google Sheets");
-    } catch (error) {
-        console.error("Google Sheets Error:", error);
+            await fetch(GOOGLE_SHEETS_WEBHOOK_URL, {
+                method: "POST",
+                mode: "no-cors",
+                body: formData
+            });
+
+            console.log("Sent to Google Sheets");
+        } catch (error) {
+            console.error("Google Sheets Error:", error);
+        }
     }
-}
 
     // Render candidates for current tab
     function renderCandidates() {
@@ -220,13 +249,33 @@ const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxdQy
         updateCharts();
     }
 
-    function downloadVoterExcel() {
-        const exportData = voteRecords.map(v => ({ "Voter Name": v.voterName, "Admission Number": v.admissionNo, "President Vote": v.presidentName, "Secretary Vote": v.secretaryName, "Treasurer Vote": v.treasurerName, "Timestamp": v.timestamp }));
-        const ws = XLSX.utils.json_to_sheet(exportData);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "VoterList");
-        XLSX.writeFile(wb, `VoterList_MultiPosition_${new Date().toISOString().slice(0,19)}.xlsx`);
+    async function downloadVoterExcel() {
         playClickSound();
+        const btn = document.getElementById("downloadVoterExcelBtn");
+        const originalText = btn.innerText || "Download Excel";
+        btn.innerText = "Downloading...";
+        btn.disabled = true;
+
+        try {
+            // GET requests to Apps Script from the browser automatically handle CORS allowing us to read the response.
+            const response = await fetch(`${GOOGLE_SHEETS_WEBHOOK_URL}?action=getResults`);
+            const data = await response.json();
+            
+            if (data && data.success && data.votes) {
+                const ws = XLSX.utils.json_to_sheet(data.votes);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "VoterList");
+                XLSX.writeFile(wb, `GoogleSheets_VoterList_${new Date().toISOString().slice(0,19)}.xlsx`);
+            } else {
+                alert("Could not process downloaded data.");
+            }
+        } catch (error) {
+            console.error("Download Error:", error);
+            alert("Error downloading data from Google Sheets.");
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
     }
 
     // Dashboard Modal Logic
