@@ -1,6 +1,4 @@
- const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxdQyx2wFGyxQ4wuHzKp3_lh80h0ZczEoLGtc1MSCi5OsRMEABjHySqJ9ZtHoPFgNfs-g/exec"; 
-    
-    // ---------- ELECTION DATA ----------
+// POSITIONS & CANDIDATES
     const POSITIONS = {
         president: { name: "President", candidates: [
             { id: "p1", name: "Basith", party: "Progressive Alliance", photo: "https://randomuser.me/api/portraits/women/68.jpg", logo: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png" },
@@ -16,20 +14,22 @@
         ]}
     };
 
-    let voteRecords = []; // { admissionNo, voterName, presidentName, secretaryName, treasurerName, timestamp }
-    const STORAGE_KEY = "MultiPositionElectionData_GS";
+    let voteRecords = []; // each: { admissionNo, voterName, presidentId, presidentName, secretaryId, secretaryName, treasurerId, treasurerName, timestamp }
+    const STORAGE_KEY = "MultiPositionElectionData";
     let charts = {};
+
+    // Current voting session
     let currentVoter = null;
     let selections = { president: null, secretary: null, treasurer: null };
     let currentTab = "president";
     const tabOrder = ["president", "secretary", "treasurer"];
 
-    // Audio effects
+    // Audio
     function playClickSound() { try { const ctx = new (window.AudioContext||window.webkitAudioContext)(); const o=ctx.createOscillator(); const g=ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.frequency.value=720; g.gain.value=0.1; o.start(); g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+0.2); o.stop(ctx.currentTime+0.15); } catch(e){} }
     function playSuccessAudio() { try { const ctx = new (window.AudioContext||window.webkitAudioContext)(); const g=ctx.createGain(); g.connect(ctx.destination); g.gain.value=0.15; [880,1046,1318].forEach((freq,i)=>{ const o=ctx.createOscillator(); o.frequency.value=freq; o.type="sine"; o.connect(g); o.start(ctx.currentTime+i*0.3); o.stop(ctx.currentTime+i*0.6); }); g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+2.5); } catch(e){} }
 
-    // ---------- LOCAL STORAGE (Excel base64) ----------
-    function saveToLocalStorage() {
+    // Excel Storage
+    function saveToExcel() {
         const sheetData = voteRecords.map(v => ({ AdmissionNumber: v.admissionNo, VoterName: v.voterName, PresidentVote: v.presidentName, SecretaryVote: v.secretaryName, TreasurerVote: v.treasurerName, Timestamp: v.timestamp }));
         const ws = XLSX.utils.json_to_sheet(sheetData);
         const wb = XLSX.utils.book_new();
@@ -42,65 +42,17 @@
         else voteRecords = [];
     }
 
-    // ---------- GOOGLE SHEETS SYNC (POST to Apps Script) ----------
-    async function syncAllToGoogleSheets() {
-        if (!GOOGLE_SHEETS_WEBHOOK_URL || GOOGLE_SHEETS_WEBHOOK_URL === "YOUR_GOOGLE_APPS_SCRIPT_WEBAPP_URL") {
-            console.warn("Google Sheets URL not configured. Votes saved locally only.");
-            document.getElementById("gsSyncStatus").innerHTML = "⚠️ Sheet not configured";
-            return false;
-        }
-        try {
-            const payload = { action: "syncAllVotes", votes: voteRecords };
-            const response = await fetch(GOOGLE_SHEETS_WEBHOOK_URL, {
-                method: "POST",
-                mode: "no-cors", // Using no-cors to avoid preflight; but response won't be readable. Alternative: CORS enabled.
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-            // With no-cors, we cannot read response, but request is sent.
-            document.getElementById("gsSyncStatus").innerHTML = "✅ Synced to Google Sheet";
-            setTimeout(()=>{ if(document.getElementById("gsSyncStatus")) document.getElementById("gsSyncStatus").innerHTML = "🔄 Live sync"; }, 3000);
-            return true;
-        } catch (err) {
-            console.error("Sync error:", err);
-            document.getElementById("gsSyncStatus").innerHTML = "❌ Sync failed";
-            return false;
-        }
-    }
-
-    async function sendSingleVoteToSheet(voteRecord) {
-        if (!GOOGLE_SHEETS_WEBHOOK_URL || GOOGLE_SHEETS_WEBHOOK_URL === "YOUR_GOOGLE_APPS_SCRIPT_WEBAPP_URL") return false;
-        try {
-            const payload = { action: "appendVote", vote: voteRecord };
-            await fetch(GOOGLE_SHEETS_WEBHOOK_URL, {
-                method: "POST",
-                mode: "no-cors",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-            return true;
-        } catch(e) { return false; }
-    }
-
-    // Helper: check if voter exists
     function hasVoted(admission) { return voteRecords.some(v => v.admissionNo === admission); }
 
-    // Submit final vote (local + Google Sheets)
     async function submitFinalVote() {
         if(!selections.president || !selections.secretary || !selections.treasurer) return false;
         if(hasVoted(currentVoter.admission)) return { success: false, message: "Already voted!" };
-        const newRecord = {
-            admissionNo: currentVoter.admission,
-            voterName: currentVoter.name,
-            presidentName: selections.president.name,
-            secretaryName: selections.secretary.name,
-            treasurerName: selections.treasurer.name,
+        voteRecords.push({
+            admissionNo: currentVoter.admission, voterName: currentVoter.name,
+            presidentName: selections.president.name, secretaryName: selections.secretary.name, treasurerName: selections.treasurer.name,
             timestamp: new Date().toLocaleString()
-        };
-        voteRecords.push(newRecord);
-        saveToLocalStorage();
-        // Async sync to Google Sheets (don't block voting experience)
-        sendSingleVoteToSheet(newRecord).catch(e=>console.warn);
+        });
+        saveToExcel();
         return { success: true };
     }
 
@@ -125,6 +77,7 @@
                 selections[currentTab] = cand;
                 renderCandidates();
                 playClickSound();
+                // Auto move to next tab after selection if not last
                 const currentIdx = tabOrder.indexOf(currentTab);
                 if(currentIdx < tabOrder.length-1) {
                     setTimeout(() => goToTab(tabOrder[currentIdx+1]), 300);
@@ -132,6 +85,7 @@
             });
             container.appendChild(card);
         });
+        // Update next button text
         const nextBtn = document.getElementById("nextTabBtn");
         if(currentTab === tabOrder[tabOrder.length-1]) nextBtn.textContent = "Submit All Votes ✓";
         else nextBtn.textContent = "Next →";
@@ -142,8 +96,9 @@
         document.querySelectorAll(".pos-tab").forEach(btn => { btn.classList.remove("active"); if(btn.dataset.pos === tab) btn.classList.add("active"); });
         renderCandidates();
         const prevBtn = document.getElementById("prevTabBtn");
-        prevBtn.disabled = (tabOrder.indexOf(tab) === 0);
         const nextBtn = document.getElementById("nextTabBtn");
+        prevBtn.disabled = (tabOrder.indexOf(tab) === 0);
+        // Update next button text
         if(tab === tabOrder[tabOrder.length-1]) nextBtn.textContent = "Submit All Votes ✓";
         else nextBtn.textContent = "Next →";
         playClickSound();
@@ -153,6 +108,7 @@
         if(!selections[currentTab]) { document.getElementById("voteFeedback").innerHTML = `<div class="info-message" style="background:#ffe0db;">Please select a candidate for ${POSITIONS[currentTab].name} position!</div>`; playClickSound(); return; }
         const currentIdx = tabOrder.indexOf(currentTab);
         if(currentIdx === tabOrder.length-1) {
+            // Submit final vote
             const result = await submitFinalVote();
             if(result.success) {
                 playSuccessAudio();
@@ -192,7 +148,7 @@
 
     function resetAuth() { document.getElementById("voterAuthArea").style.display="block"; document.getElementById("votingPanelArea").style.display="none"; currentVoter=null; document.getElementById("voterName").value=""; document.getElementById("admissionNo").value=""; document.getElementById("authError").style.display="none"; document.getElementById("voteFeedback").innerHTML=""; }
 
-    // Dashboard logic
+    // Dashboard & Charts
     function getCountsByPosition() {
         let pres = {}, sec = {}, treas = {};
         POSITIONS.president.candidates.forEach(c => pres[c.name]=0);
@@ -236,48 +192,36 @@
         const ws = XLSX.utils.json_to_sheet(exportData);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "VoterList");
-        XLSX.writeFile(wb, `VoterList_Alhidaya_${new Date().toISOString().slice(0,19)}.xlsx`);
+        XLSX.writeFile(wb, `VoterList_MultiPosition_${new Date().toISOString().slice(0,19)}.xlsx`);
         playClickSound();
     }
 
-    // Dashboard Modal handlers
+    // Dashboard Modal Logic
     const modalOverlay = document.getElementById("dashboardModal");
     const dashboardPanel = document.getElementById("dashboardPanel");
     function openDashboardLogin() { modalOverlay.classList.add("active"); playClickSound(); }
     function closeLoginModal() { modalOverlay.classList.remove("active"); }
     function closeDashboardPanel() { dashboardPanel.classList.remove("active"); }
-    async function validateDashboardLogin() {
+    function validateDashboardLogin() {
         const user = document.getElementById("adminUsername").value, pass = document.getElementById("adminPassword").value;
         if(user === "alhidaya" && pass === "hudaelection") {
             modalOverlay.classList.remove("active");
-            await loadFromStorage();
-            renderDashboard();
-            dashboardPanel.classList.add("active");
-            playClickSound();
-            if(GOOGLE_SHEETS_WEBHOOK_URL && GOOGLE_SHEETS_WEBHOOK_URL !== "YOUR_GOOGLE_APPS_SCRIPT_WEBAPP_URL") {
-                document.getElementById("gsSyncStatus").innerHTML = "🔄 Google Sheet ready";
-            } else { document.getElementById("gsSyncStatus").innerHTML = "⚙️ Set Web App URL"; }
+            loadFromStorage().then(()=>{ renderDashboard(); dashboardPanel.classList.add("active"); playClickSound(); });
         } else { document.getElementById("dashboardLoginError").innerText = "Invalid credentials!"; playClickSound(); }
     }
-    async function manualSyncToSheet() {
-        if(GOOGLE_SHEETS_WEBHOOK_URL && GOOGLE_SHEETS_WEBHOOK_URL !== "YOUR_GOOGLE_APPS_SCRIPT_WEBAPP_URL") {
-            await syncAllToGoogleSheets();
-            alert("Sync request sent to Google Sheets.");
-        } else alert("Please configure GOOGLE_SHEETS_WEBHOOK_URL with your Apps Script deployment URL.");
-    }
+    function refreshExcel() { localStorage.removeItem(STORAGE_KEY); loadFromStorage().then(()=>{ renderDashboard(); alert("Excel data refreshed"); }); }
 
-    // Event binding
+    // Event Listeners
     document.getElementById("openDashboardBtn").addEventListener("click", openDashboardLogin);
     document.getElementById("submitDashboardLogin").addEventListener("click", validateDashboardLogin);
     document.getElementById("closeModalBtn").addEventListener("click", closeLoginModal);
     document.getElementById("closeDashboardPanelBtn").addEventListener("click", closeDashboardPanel);
-    document.getElementById("refreshExcelBtn").addEventListener("click", async () => { await loadFromStorage(); renderDashboard(); alert("Local data refreshed"); });
+    document.getElementById("refreshExcelBtn").addEventListener("click", refreshExcel);
     document.getElementById("downloadVoterExcelBtn").addEventListener("click", downloadVoterExcel);
     document.getElementById("authenticateBtn").addEventListener("click", authenticateVoter);
     document.getElementById("resetVoteBtn").addEventListener("click", resetAuth);
     document.getElementById("nextTabBtn").addEventListener("click", handleNext);
     document.getElementById("prevTabBtn").addEventListener("click", goPrev);
-    document.getElementById("syncNowBtn")?.addEventListener("click", manualSyncToSheet);
     document.querySelectorAll(".pos-tab").forEach(btn => { btn.addEventListener("click", (e) => { goToTab(btn.dataset.pos); }); });
 
     window.addEventListener("DOMContentLoaded", async () => { await loadFromStorage(); resetAuth(); });

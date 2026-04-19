@@ -2,10 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alhidaya Election System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Alhidaya Election Commission</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,8 +15,6 @@
     <div class="main-header">
         <div class="logo-area">
             <h1><i class="fas fa-landmark"></i> Alhidaya Election Commission</h1>
-            <p><i class="fas fa-cloud-upload-alt"></i> Live Google Sheets Sync | President • Secretary • Treasurer</p>
-            <div class="sync-badge" id="syncIndicator"><i class="fas fa-sync-alt"></i> Auto-sync to Sheet</div>
         </div>
         <button class="dashboard-access-btn" id="openDashboardBtn"><i class="fas fa-chalkboard-user"></i> Dashboard Access</button>
     </div>
@@ -26,20 +26,24 @@
                 <div style="max-width: 500px; margin: 0 auto; text-align: center;">
                     <i class="fas fa-id-card" style="font-size: 2.8rem; color: #2c7da0;"></i>
                     <h2>Voter Authentication</h2>
-                    <input type="text" id="voterName" placeholder="Full Name" style="width:100%; margin: 15px 0; padding: 14px; border-radius:60px; border:2px solid #e2edf2;">
+                    <input type="text" id="voterName" class="input-modern" placeholder="Full Name" style="width:100%; margin: 15px 0; padding: 14px; border-radius:60px; border:2px solid #e2edf2;">
                     <input type="text" id="admissionNo" placeholder="Admission Number" style="width:100%; padding:14px; border-radius:60px; border:2px solid #e2edf2;">
-                    <button class="btn-primary" id="authenticateBtn" style="margin-top: 20px;"><i class="fas fa-check-circle"></i> Verify & Start Voting</button>
+                    <button class="btn-primary" id="authenticateBtn" style="margin-top: 20px;"><i class="fas fa-check-circle"></i>Start Voting</button>
                     <div id="authError" class="info-message" style="display:none; background:#ffe0db;"></div>
                 </div>
             </div>
             <div id="votingPanelArea" style="display: none;">
                 <div id="voterWelcomeMsg" class="info-message" style="background:#d9f0ec;"></div>
+                
+                <!-- Position Tabs -->
                 <div class="position-tabs">
-                    <button class="pos-tab active" data-pos="president">👑 President</button>
-                    <button class="pos-tab" data-pos="secretary">📝 Secretary</button>
-                    <button class="pos-tab" data-pos="treasurer">💰 Treasurer</button>
+                    <button class="pos-tab active" data-pos="president">President</button>
+                    <button class="pos-tab" data-pos="secretary">Secretary</button>
+                    <button class="pos-tab" data-pos="treasurer">Treasurer</button>
                 </div>
+                
                 <div id="candidatesContainer" class="candidates-grid"></div>
+                
                 <div class="nav-buttons">
                     <button id="prevTabBtn" class="btn-secondary" disabled><i class="fas fa-arrow-left"></i> Previous</button>
                     <button id="nextTabBtn" class="btn-primary">Next <i class="fas fa-arrow-right"></i></button>
@@ -49,29 +53,24 @@
             </div>
         </div>
     </div>
-    <footer><i class="fas fa-database"></i> Votes stored in Google Sheets & Local Backup | Dashboard syncs live</footer>
+    <footer><i class="fas fa-volume-up"></i> Select one candidate per position</footer>
 </div>
 
-<div id="successPopup" class="success-popup"><div class="popup-content"><i class="fas fa-check-circle" style="font-size:3rem; color:#1f6e43;"></i><h2>✓ Vote Cast Successfully!</h2><p>All selections recorded & synced to Google Sheet.</p><div id="popupTimer">Redirecting in 3 seconds...</div></div></div>
+<!-- Success Popup -->
+<div id="successPopup" class="success-popup"><div class="popup-content"><i class="fas fa-check-circle" style="font-size:3rem; color:#1f6e43;"></i><h2>✓ Vote Cast Successfully!</h2><p>All your selections have been recorded.</p><div id="popupTimer">Redirecting in 3 seconds...</div></div></div>
 
 <!-- Dashboard Modal & Panel -->
 <div id="dashboardModal" class="modal-overlay"><div class="modal-card"><i class="fas fa-lock" style="font-size:2rem;"></i><h2>Admin Dashboard</h2><input type="text" id="adminUsername" placeholder="Username"><input type="password" id="adminPassword" placeholder="Password"><button class="btn-primary" id="submitDashboardLogin">Unlock</button><div id="dashboardLoginError" class="error-text"></div><button id="closeModalBtn">Close</button></div></div>
 <div id="dashboardPanel" class="modal-overlay" style="z-index:2100; background:rgba(0,0,0,0.92);">
-<div style="width:95%; max-width:1400px; max-height:90vh; overflow-y:auto; background:#f8fafc; border-radius:40px; padding:25px;">
-    <div style="display:flex; justify-content:space-between; flex-wrap:wrap;">
-        <h2><i class="fas fa-chart-line"></i> Election Dashboard <span id="gsSyncStatus" style="font-size:0.8rem; background:#e2e8f0; padding:4px 12px; border-radius:50px;"></span></h2>
-        <div><button id="syncNowBtn" class="btn-secondary"><i class="fas fa-cloud-upload-alt"></i> Sync to Google Sheet</button>
-            <button id="refreshExcelBtn" class="btn-secondary">Refresh Local</button>
-            <button id="closeDashboardPanelBtn" class="btn-secondary">Close</button></div></div>
-            <div class="chart-container">
-                <div class="chart-box"><canvas id="presidentChart"></canvas>
-                    <h4>President Race</h4></div>
-                    <div class="chart-box"><canvas id="secretaryChart"></canvas><h4>Secretary Race</h4>
-                    </div><div class="chart-box"><canvas id="treasurerChart"></canvas><h4>Treasurer Race</h4></div>
-                </div><div id="dashStats"></div><div id="dashResultsTable"></div>
-                <button id="downloadVoterExcelBtn" class="btn-primary" style="margin-top:20px;">Download Voter List (Excel)</button>
-            </div>
-        </div>
+    <div style="width:95%; max-width:1400px; max-height:90vh; overflow-y:auto; background:#f8fafc; border-radius:40px; padding:25px;">
+        <div style="display:flex; justify-content:space-between;"><h2><i class="fas fa-chart-line"></i> Election Dashboard</h2>
+            <div><button id="refreshExcelBtn" class="btn-secondary">Refresh Excel</button><button id="closeDashboardPanelBtn" class="btn-secondary">Close</button></div></div>
+                <div class="chart-container"><div class="chart-box"><canvas id="presidentChart"></canvas><h4>President Race</h4></div>
+                    <div class="chart-box"><canvas id="secretaryChart"></canvas><h4>Secretary Race</h4></div>
+                        <div class="chart-box"><canvas id="treasurerChart"></canvas><h4>Treasurer Race</h4></div></div><div id="dashStats"></div>
+                            <div id="dashResultsTable"></div><button id="downloadVoterExcelBtn" class="btn-primary" style="margin-top:20px;">Download Voter List (Excel)</button>
+                        </div>
+                    </div>
 
 <script src="script.js"></script>
 </body>
