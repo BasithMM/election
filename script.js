@@ -14,7 +14,7 @@ const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbw_1W
         ]},
         treasurer: { name: "Treasurer", candidates: [
             { id: "t1", name: "HABEEBU RAHMAN E", party: "Economic Reform", photo: "#", logo: "#" },
-            { id: "t2", name: "MUHAMMED NIHAL", party: "Transparency Front", photo: "#", logo: "#" }
+            { id: "t2", name: "MUHAMMED", party: "Transparency Front", photo: "#", logo: "#" }
         ]}
     };
 
