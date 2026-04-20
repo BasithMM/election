@@ -5,28 +5,36 @@ const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbw_1W
 
     const POSITIONS = {
         president: { name: "President", candidates: [
-            { id: "p1", name: "Basith", party: "Progressive Alliance", photo: "#", logo: "#" },
-            { id: "p2", name: "Badusha", party: "Unity Movement", photo: "#", logo: "#" }
+            { id: "p1", name: "MUHAMMED JURAIJ", party: "Progressive Alliance", photo: "#", logo: "#" },
+            { id: "p2", name: "MUHAMMED RIZWAN", party: "Unity Movement", photo: "#", logo: "#" }
+        ]},
+        vicepresident: { name: "vice President", candidates: [
+            { id: "p1", name: "ABDUL BASITH MM", party: "Progressive Alliance", photo: "#", logo: "#" },
+            { id: "p2", name: "AHMED YASIR MK", party: "Unity Movement", photo: "#", logo: "#" }
         ]},
         secretary: { name: "Secretary", candidates: [
-            { id: "s1", name: "Shahal", party: "Students First", photo: "#", logo: "#" },
-            { id: "s2", name: "Hadi ameen", party: "Campus Vision", photo: "#", logo: "#" }
+            { id: "s1", name: "SHAHAFAS IBI", party: "Students First", photo: "#", logo: "#" },
+            { id: "s2", name: "MUHAMMED RASI A", party: "Campus Vision", photo: "#", logo: "#" }
+        ]},
+        joinsecretary: { name: "Join Secretary", candidates: [
+            { id: "s1", name: "HADI AMEEN P", party: "Students First", photo: "#", logo: "#" },
+            { id: "s2", name: "JAZIB MOHAMMED K", party: "Campus Vision", photo: "#", logo: "#" }
         ]},
         treasurer: { name: "Treasurer", candidates: [
-            { id: "t1", name: "Riyan", party: "Economic Reform", photo: "#", logo: "#" },
-            { id: "t2", name: "Rizwan", party: "Transparency Front", photo: "#", logo: "#" }
+            { id: "t1", name: "HABEEBU RAHMAN E", party: "Economic Reform", photo: "#", logo: "#" },
+            { id: "t2", name: "MUHAMMED NIHAL ON", party: "Transparency Front", photo: "#", logo: "#" }
         ]}
     };
 
-    let voteRecords = []; // each: { admissionNo,voter name, presidentId, presidentName, secretaryId, secretaryName, treasurerId, treasurerName, timestamp }
+    let voteRecords = []; // each: { admissionNo,voter name, presidentId, presidentName, vicepresidentId, vicepresidentName, secretaryId, secretaryName, joinSecretaryId, joinSecretaryName, treasurerId, treasurerName, timestamp }
     const STORAGE_KEY = "MultiPositionElectionData";
     let charts = {};
 
     // Current voting session
     let currentVoter = null;
-    let selections = { president: null, secretary: null, treasurer: null };
+    let selections = { president: null, vicepresident: null, secretary: null, joinSecretary: null, treasurer: null };
     let currentTab = "president";
-    const tabOrder = ["president", "secretary", "treasurer"];
+    const tabOrder = ["president","vice president", "secretary","join Secretary", "treasurer"];
 
    // Audio (MP3 version)
 const clickSound = new Audio();
@@ -52,7 +60,7 @@ function playSuccessAudio() {
 
     // Excel Storage
     function saveToExcel() {
-        const sheetData = voteRecords.map(v => ({ AdmissionNumber: v.admissionNo, VoterName: v.voterName, PresidentVote: v.presidentName, SecretaryVote: v.secretaryName, TreasurerVote: v.treasurerName, Timestamp: v.timestamp }));
+        const sheetData = voteRecords.map(v => ({ AdmissionNumber: v.admissionNo, VoterName: v.voterName, PresidentVote: v.presidentName, vicePresidentvote: v.vicePresidentName, SecretaryVote: v.secretaryName, joinSecretaryvote: v.joinSecretaryName, TreasurerVote: v.treasurerName, Timestamp: v.timestamp }));
         const ws = XLSX.utils.json_to_sheet(sheetData);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "MultiPositionVotes");
@@ -69,7 +77,9 @@ function playSuccessAudio() {
                     admissionNo: r["Admission Number"],
                     voterName: r["Voter Name"],
                     presidentName: r["President Vote"],
+                    vicepresidentName: r["vice President Vote"],
                     secretaryName: r["Secretary Vote"],
+                    joinsecretaryName: r["join Secretary Vote"],
                     treasurerName: r["Treasurer Vote"],
                     timestamp: r["Timestamp"]
                 }));
@@ -83,7 +93,7 @@ function playSuccessAudio() {
         
         // Offline Fallback
         const stored = localStorage.getItem(STORAGE_KEY);
-        if(stored) { try { const wb = XLSX.read(atob(stored), { type: 'binary' }); const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]); voteRecords = rows.map(r => ({ admissionNo: r.AdmissionNumber, voterName: r.VoterName, presidentName: r.PresidentVote, secretaryName: r.SecretaryVote, treasurerName: r.TreasurerVote, timestamp: r.Timestamp })); } catch(e){} }
+        if(stored) { try { const wb = XLSX.read(atob(stored), { type: 'binary' }); const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]); voteRecords = rows.map(r => ({ admissionNo: r.AdmissionNumber, voterName: r.VoterName, presidentName: r.PresidentVote, vicepresidentName: r.vicePresidentVote, secretaryName: r.SecretaryVote, joinsecretaryName: r.joinSecretaryVote, treasurerName: r.TreasurerVote, timestamp: r.Timestamp })); } catch(e){} }
         else voteRecords = [];
     }
 
@@ -99,7 +109,9 @@ function playSuccessAudio() {
         admissionNo: currentVoter.admission,
         voterName: currentVoter.name,
         presidentName: selections.president.name,
+        vicepresidentName: selections.vicepresident.name,
         secretaryName: selections.secretary.name,
+        joinsecretaryName: selections.joinsecretary.name,
         treasurerName: selections.treasurer.name,
         timestamp: new Date().toLocaleString()
     };
@@ -216,7 +228,7 @@ function playSuccessAudio() {
         if(hasVoted(admission)) { errDiv.style.display="block"; errDiv.innerHTML="Already voted!"; playClickSound(); return; }
         errDiv.style.display="none";
         currentVoter = { name, admission };
-        selections = { president: null, secretary: null, treasurer: null };
+        selections = { president: null, vicePresident: null, secretary: null,JoinSecretary: null, treasurer: null };
         currentTab = "president";
         document.getElementById("voterAuthArea").style.display = "none";
         document.getElementById("votingPanelArea").style.display = "block";
@@ -230,19 +242,25 @@ function playSuccessAudio() {
     function getCountsByPosition() {
         let pres = {}, sec = {}, treas = {};
         POSITIONS.president.candidates.forEach(c => pres[c.name]=0);
+        POSITIONS.vicepresident.candidates.forEach(c => pres[c.name]=0);
         POSITIONS.secretary.candidates.forEach(c => sec[c.name]=0);
+        POSITIONS.joinsecretary.candidates.forEach(c => sec[c.name]=0);
         POSITIONS.treasurer.candidates.forEach(c => treas[c.name]=0);
-        voteRecords.forEach(v => { if(v.presidentName) pres[v.presidentName] = (pres[v.presidentName]||0)+1; if(v.secretaryName) sec[v.secretaryName] = (sec[v.secretaryName]||0)+1; if(v.treasurerName) treas[v.treasurerName] = (treas[v.treasurerName]||0)+1; });
-        return { pres, sec, treas };
+        voteRecords.forEach(v => { if(v.presidentName) pres[v.presidentName] = (pres[v.presidentName]||0)+1; if(v.vicepresidentName) pres[v.vicepresidentName] = (pres[v.vicepresidentName]||0)+1; if(v.secretaryName) sec[v.secretaryName] = (sec[v.secretaryName]||0)+1; if(v.joinsecretaryName) sec[v.joinsecretaryName] = (sec[v.joinsecretaryName]||0)+1; if(v.treasurerName) treas[v.treasurerName] = (treas[v.treasurerName]||0)+1; });
+        return { pres, vicepres, sec, joinsec, treas };
     }
 
     function updateCharts() {
         const counts = getCountsByPosition();
         if(charts.president) charts.president.destroy();
+        if(charts.vicepresident) charts.vicepresident.destroy();
         if(charts.secretary) charts.secretary.destroy();
+        if(charts.joinsecretary) charts.joinsecretary.destroy();
         if(charts.treasurer) charts.treasurer.destroy();
         charts.president = new Chart(document.getElementById("presidentChart"), { type: 'bar', data: { labels: Object.keys(counts.pres), datasets: [{ label: 'Votes', data: Object.values(counts.pres), backgroundColor: '#1f6e43', borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: true } });
+        charts.vicepresident = new Chart(document.getElementById("vice presidentChart"), { type: 'bar', data: { labels: Object.keys(counts.vicepres), datasets: [{ label: 'Votes', data: Object.values(counts.vicepres), backgroundColor: '#6e1f1f', borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: true } });
         charts.secretary = new Chart(document.getElementById("secretaryChart"), { type: 'bar', data: { labels: Object.keys(counts.sec), datasets: [{ label: 'Votes', data: Object.values(counts.sec), backgroundColor: '#2c7da0', borderRadius: 8 }] }, options: { responsive: true } });
+        charts.joinsecretary = new Chart(document.getElementById("join secretaryChart"), { type: 'bar', data: { labels: Object.keys(counts.joinsec), datasets: [{ label: 'Votes', data: Object.values(counts.joinsec), backgroundColor: '#582ca0', borderRadius: 8 }] }, options: { responsive: true } });
         charts.treasurer = new Chart(document.getElementById("treasurerChart"), { type: 'bar', data: { labels: Object.keys(counts.treas), datasets: [{ label: 'Votes', data: Object.values(counts.treas), backgroundColor: '#e67e22', borderRadius: 8 }] }, options: { responsive: true } });
     }
 
@@ -251,15 +269,21 @@ function playSuccessAudio() {
         const totalVoters = voteRecords.length;
         const totalUnique = new Set(voteRecords.map(v=>v.admissionNo)).size;
         let presWinner = Object.entries(counts.pres).sort((a,b)=>b[1]-a[1])[0];
+        let vicepresWinner = Object.entries(counts.vicepres).sort((a,b)=>b[1]-a[1])[0];
         let secWinner = Object.entries(counts.sec).sort((a,b)=>b[1]-a[1])[0];
+        let joinsecWinner = Object.entries(counts.joinsec).sort((a,b)=>b[1]-a[1])[0];
         let treasWinner = Object.entries(counts.treas).sort((a,b)=>b[1]-a[1])[0];
-        document.getElementById("dashStats").innerHTML = `<div class="stats-grid"><div class="stat-card"><div class="stat-number">${totalVoters}</div><div>Total Votes Cast</div></div><div class="stat-card"><div class="stat-number">${totalUnique}</div><div>Unique Voters</div></div><div class="stat-card"><div class="stat-number">${presWinner?.[0]||'—'}</div><div>President Leader</div></div><div class="stat-card"><div class="stat-number">${secWinner?.[0]||'—'}
-                                                          </div><div>Secretary Leader</div></div><div class="stat-card"><div class="stat-number">${treasWinner?.[0]||'—'}
+        document.getElementById("dashStats").innerHTML = `<div class="stats-grid"><div class="stat-card"><div class="stat-number">${totalVoters}</div><div>Total Votes Cast</div></div><div class="stat-card"><div class="stat-number">${totalUnique}</div><div>Unique Voters</div></div>
+                                                          <div class="stat-card"><div class="stat-number">${presWinner?.[0]||'—'}</div><div>President Leader</div></div>
+                                                          <div class="stat-card"><div class="stat-number">${vicepresWinner?.[0]||'—'}</div><div>vice President Leader</div></div>
+                                                          <div class="stat-card"><div class="stat-number">${secWinner?.[0]||'—'} </div><div>Secretary Leader</div></div>
+                                                          <div class="stat-card"><div class="stat-number">${joinsecWinner?.[0]||'—'}</div><div>join Secretary Leader</div></div>
+                                                          <div class="stat-card"><div class="stat-number">${treasWinner?.[0]||'—'}
                                                           </div><div>Treasurer Leader</div></div></div>`;
         let tableHtml = `<table class="result-table"><thead><tr><th>Position</th><th>Candidate</th><th>Party</th><th>Votes</th></tr></thead><tbody>`;
-        for(let pos of ['president','secretary','treasurer']){
+        for(let pos of ['president','vicepresident','secretary','joinsecretary','treasurer']){
             let cands = POSITIONS[pos].candidates;
-            let countMap = pos==='president'?counts.pres:(pos==='secretary'?counts.sec:counts.treas);
+            let countMap = (pos==='president'?counts.pres:counts.vicepres)(pos==='secretary'?counts.sec:counts.treas);
             cands.forEach(c=>{ tableHtml += `<tr><td>${POSITIONS[pos].name}</td><td>${c.name}</td><td>${c.party}</td><td><span class="vote-badge">${countMap[c.name]||0}</span></td></tr>`; });
         }
         tableHtml += `</tbody></table>`;
