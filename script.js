@@ -30,7 +30,7 @@ const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbw_1W
 
    // Audio (MP3 version)
 const clickSound = new Audio();
-const successSound = new Audio("sound/succsses.mp4");
+const successSound = new Audio("succss.mp4");
 
 // Optional settings
 clickSound.volume = 0.5;
