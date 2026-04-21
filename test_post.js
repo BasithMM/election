@@ -1,4 +1,12 @@
-const voteData = { admissionNo: "1234", voterName: "Node Test", presidentName: "MUHAMMED JURAIJ",vicepresident: "ABDUL BASITH MM", secretaryName: "SHAHAFAS IBI", joinsecretary: "HADI AMEEN P", treasurerName: "HABEEBU RAHMAN E" };
+const voteData = {
+    admissionNo: "1234",
+    voterName: "Node Test",
+    presidentName: "MUHAMMED JURAIJ",
+    vicePresidentName: "ABDUL BASITH MM",
+    secretaryName: "SHAHAFAS IBI",
+    jointSecretaryName: "HADI AMEEN P",
+    treasurerName: "HABEEBU RAHMAN E"
+};
 
 const formData = new URLSearchParams();
 for (const key in voteData) {

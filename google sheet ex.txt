@@ -14,14 +14,16 @@ function doGet(e) {
     var votes = [];
     // Start from row 1 to skip headers
     for (var i = 1; i < data.length; i++) {
-        // Headers: ["Timestamp", "AdmissionNumber", "VoterName", "PresidentVote", "SecretaryVote", "TreasurerVote", "Status"]
+        // Headers: ["Timestamp", "AdmissionNumber", "VoterName", "PresidentVote", "VicePresidentVote", "SecretaryVote", "JointSecretaryVote", "TreasurerVote", "Status"]
         votes.push({
           "Timestamp": data[i][0] || "",
           "Admission Number": data[i][1] || "",
           "Voter Name": data[i][2] || "",
           "President Vote": data[i][3] || "",
-          "Secretary Vote": data[i][4] || "",
-          "Treasurer Vote": data[i][5] || ""
+          "Vice President Vote": data[i][4] || "",
+          "Secretary Vote": data[i][5] || "",
+          "Joint Secretary Vote": data[i][6] || "",
+          "Treasurer Vote": data[i][7] || ""
         });
     }
     
@@ -56,13 +58,13 @@ function saveVote(data) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
   if (!sheet) {
     sheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet(sheetName);
-    sheet.appendRow(["Timestamp", "AdmissionNumber", "VoterName", "PresidentVote", "SecretaryVote", "TreasurerVote", "Status"]);
+    sheet.appendRow(["Timestamp", "AdmissionNumber", "VoterName", "PresidentVote", "VicePresidentVote", "SecretaryVote", "JointSecretaryVote", "TreasurerVote", "Status"]);
   }
   
   // Check if already voted
   var existingData = sheet.getDataRange().getValues();
   for (var i = 1; i < existingData.length; i++) {
-    if (existingData[i][1] === data.admissionNo) {
+    if (existingData[i][1] == data.admissionNo) {
       return ContentService.createTextOutput(JSON.stringify({ success: false, error: "Already voted!" }))
         .setMimeType(ContentService.MimeType.JSON);
     }
@@ -73,8 +75,10 @@ function saveVote(data) {
     data.timestamp || new Date().toISOString(),
     data.admissionNo,
     data.voterName,
-    data.presidentName,   
-    data.secretaryName,   
+    data.presidentName,
+    data.vicePresidentName,
+    data.secretaryName,
+    data.jointSecretaryName,
     data.treasurerName,   
     "Completed"
   ]);
