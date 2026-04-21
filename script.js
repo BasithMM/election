@@ -27,17 +27,15 @@ const POSITIONS = {
 
 const TAB_ORDER = ["president", "vicepresident", "secretary", "joinsecretary", "treasurer"];
 
-let voteRecords = [];
+let voteRecords = []; // each record: admissionNo, voterName, presidentName, vicePresidentName, secretaryName, jointSecretaryName, treasurerName, timestamp
 const STORAGE_KEY = "MultiPositionElectionData_V5";
 let charts = {};
+
 let currentVoter = null;
 let selections = { president: null, vicepresident: null, secretary: null, joinsecretary: null, treasurer: null };
 let currentTab = "president";
-let loginAttempts = 0;
-const MAX_LOGIN_ATTEMPTS = 3;
-let loginLockoutTime = null;
 
-// Audio
+// Audio (optional)
 const clickSound = new Audio();
 const successSound = new Audio("succss.mp4");
 clickSound.volume = 0.4;
@@ -148,6 +146,7 @@ function renderCandidates() {
             selections[currentTab] = cand;
             renderCandidates();
             playClickSound();
+            // Auto move to next tab if not last
             const idx = TAB_ORDER.indexOf(currentTab);
             if(idx < TAB_ORDER.length - 1) {
                 setTimeout(() => goToTab(TAB_ORDER[idx+1]), 280);
@@ -209,36 +208,8 @@ function authenticateVoter() {
     const name = document.getElementById("voterName").value.trim();
     const admission = document.getElementById("admissionNo").value.trim();
     const errDiv = document.getElementById("authError");
-    
-    // Enhanced validation
-    if(!name || !admission) { 
-        errDiv.style.display="block"; 
-        errDiv.innerHTML="❌ Please fill both Name and Admission Number fields"; 
-        playClickSound(); 
-        return; 
-    }
-    
-    if(name.length < 2) {
-        errDiv.style.display="block"; 
-        errDiv.innerHTML="❌ Please enter a valid name (minimum 2 characters)"; 
-        playClickSound(); 
-        return;
-    }
-    
-    if(!/^[0-9]+$/.test(admission)) {
-        errDiv.style.display="block"; 
-        errDiv.innerHTML="❌ Admission Number must contain only numbers"; 
-        playClickSound(); 
-        return;
-    }
-    
-    if(hasVoted(admission)) { 
-        errDiv.style.display="block"; 
-        errDiv.innerHTML="❌ This Admission Number has already voted!"; 
-        playClickSound(); 
-        return; 
-    }
-    
+    if(!name || !admission) { errDiv.style.display="block"; errDiv.innerHTML="Please fill all fields"; playClickSound(); return; }
+    if(hasVoted(admission)) { errDiv.style.display="block"; errDiv.innerHTML="❌ Admission number already voted!"; playClickSound(); return; }
     errDiv.style.display="none";
     currentVoter = { name, admission };
     selections = { president: null, vicepresident: null, secretary: null, joinsecretary: null, treasurer: null };
@@ -259,7 +230,7 @@ function resetAuth() {
     document.getElementById("voteFeedback").innerHTML="";
 }
 
-// DASHBOARD STATS & CHARTS
+// ---------- DASHBOARD STATS & CHARTS (5 positions) ----------
 function getCountsByPosition() {
     let pres={}, vp={}, sec={}, js={}, treas={};
     POSITIONS.president.candidates.forEach(c => pres[c.name]=0);
@@ -339,192 +310,24 @@ async function downloadVoterExcel() {
             XLSX.utils.book_append_sheet(wb, ws, "FullVoterList");
             XLSX.writeFile(wb, `AlHidaya_Election_Results_${new Date().toISOString().slice(0,19)}.xlsx`);
         } else alert("Could not retrieve data");
-    } catch(e) { alert("Download error: " + e.message); } finally { btn.innerText = original; btn.disabled = false; }
+    } catch(e) { alert("Download error"); } finally { btn.innerText = original; btn.disabled = false; }
 }
 
-function refreshData() { 
-    loadFromStorage().then(()=>{ 
-        renderDashboard(); 
-        showTemporaryMessage("Dashboard data refreshed successfully!", "success");
-    }).catch(() => {
-        showTemporaryMessage("Error refreshing data", "error");
-    }); 
-}
+function refreshData() { loadFromStorage().then(()=>{ renderDashboard(); alert("Dashboard data refreshed from storage"); }); }
 
-// Dashboard login with enhanced validation
-function openDashboardLogin() { 
-    // Reset login attempts and form when opening
-    loginAttempts = 0;
-    document.getElementById("adminUsername").value = "";
-    document.getElementById("adminPassword").value = "";
-    document.getElementById("dashboardLoginError").innerHTML = "";
-    document.getElementById("adminUsername").disabled = false;
-    document.getElementById("adminPassword").disabled = false;
-    document.getElementById("submitDashboardLogin").disabled = false;
-    modalOverlay.classList.add("active"); 
-    playClickSound(); 
-}
-
-function closeLoginModal() { 
-    modalOverlay.classList.remove("active");
-    document.getElementById("dashboardLoginError").innerHTML = "";
-}
-
-function closeDashboardPanel() { 
-    dashboardPanel.classList.remove("active"); 
-}
-
-function showTemporaryMessage(message, type = "info") {
-    const msgDiv = document.createElement("div");
-    msgDiv.className = `temporary-message ${type}`;
-    msgDiv.innerHTML = message;
-    msgDiv.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 12px 20px;
-        background: ${type === "success" ? "#4CAF50" : (type === "error" ? "#f44336" : "#2196F3")};
-        color: white;
-        border-radius: 8px;
-        z-index: 10000;
-        animation: slideIn 0.3s ease-out;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    `;
-    document.body.appendChild(msgDiv);
-    setTimeout(() => {
-        msgDiv.style.animation = "slideOut 0.3s ease-out";
-        setTimeout(() => msgDiv.remove(), 300);
-    }, 3000);
-}
-
+// Dashboard modal logic
+const modalOverlay = document.getElementById("dashboardModal");
+const dashboardPanel = document.getElementById("dashboardPanel");
+function openDashboardLogin() { modalOverlay.classList.add("active"); playClickSound(); }
+function closeLoginModal() { modalOverlay.classList.remove("active"); }
+function closeDashboardPanel() { dashboardPanel.classList.remove("active"); }
 function validateDashboardLogin() {
-    const username = document.getElementById("adminUsername").value.trim();
-    const password = document.getElementById("adminPassword").value;
-    const errorDiv = document.getElementById("dashboardLoginError");
-    
-    // Check lockout
-    if(loginLockoutTime && Date.now() < loginLockoutTime) {
-        const remainingMinutes = Math.ceil((loginLockoutTime - Date.now()) / 60000);
-        errorDiv.innerHTML = `Too many failed attempts. Please try again in ${remainingMinutes} minute(s).`;
-        playClickSound();
-        return;
-    } else if(loginLockoutTime && Date.now() >= loginLockoutTime) {
-        loginLockoutTime = null;
-        loginAttempts = 0;
-    }
-    
-    // Input validation
-    if(!username || !password) {
-        errorDiv.innerHTML = "❌ Please enter both username and password";
-        playClickSound();
-        return;
-    }
-    
-    if(username.length < 3) {
-        errorDiv.innerHTML = "❌ Invalid username format";
-        playClickSound();
-        return;
-    }
-    
-    // Rate limiting check
-    if(loginAttempts >= MAX_LOGIN_ATTEMPTS) {
-        loginLockoutTime = Date.now() + (5 * 60 * 1000); // 5 minute lockout
-        errorDiv.innerHTML = `Too many failed attempts! Please wait 5 minutes before trying again.`;
-        document.getElementById("adminUsername").disabled = true;
-        document.getElementById("adminPassword").disabled = true;
-        document.getElementById("submitDashboardLogin").disabled = true;
-        setTimeout(() => {
-            document.getElementById("adminUsername").disabled = false;
-            document.getElementById("adminPassword").disabled = false;
-            document.getElementById("submitDashboardLogin").disabled = false;
-            errorDiv.innerHTML = "";
-        }, 300000);
-        playClickSound();
-        return;
-    }
-    
-    // Credential validation
-    if(username === "alhidaya" && password === "hudaelection") {
-        errorDiv.innerHTML = "";
-        loginAttempts = 0;
+    const user = document.getElementById("adminUsername").value, pass = document.getElementById("adminPassword").value;
+    if(user === "alhidaya" && pass === "hudaelection") {
         modalOverlay.classList.remove("active");
-        loadFromStorage().then(() => {
-            renderDashboard(); 
-            dashboardPanel.classList.add("active"); 
-            playClickSound();
-            showTemporaryMessage("Login successful! Welcome to the Dashboard.", "success");
-        }).catch(() => {
-            showTemporaryMessage("Error loading data", "error");
-        });
-    } else {
-        loginAttempts++;
-        const remainingAttempts = MAX_LOGIN_ATTEMPTS - loginAttempts;
-        errorDiv.innerHTML = `❌ Invalid credentials! ${remainingAttempts} attempt(s) remaining.`;
-        playClickSound();
-        
-        // Clear password field for security
-        document.getElementById("adminPassword").value = "";
-        
-        // Focus back on password field
-        document.getElementById("adminPassword").focus();
-    }
+        loadFromStorage().then(()=>{ renderDashboard(); dashboardPanel.classList.add("active"); playClickSound(); });
+    } else { document.getElementById("dashboardLoginError").innerText = "Invalid credentials!"; playClickSound(); }
 }
-
-// Add Enter key support for login
-function setupLoginEnterKey() {
-    const passwordInput = document.getElementById("adminPassword");
-    if(passwordInput) {
-        passwordInput.addEventListener("keypress", function(event) {
-            if(event.key === "Enter") {
-                event.preventDefault();
-                validateDashboardLogin();
-            }
-        });
-    }
-    
-    const usernameInput = document.getElementById("adminUsername");
-    if(usernameInput) {
-        usernameInput.addEventListener("keypress", function(event) {
-            if(event.key === "Enter") {
-                event.preventDefault();
-                document.getElementById("adminPassword").focus();
-            }
-        });
-    }
-}
-
-// Add CSS animations for temporary messages
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-    
-    @keyframes slideOut {
-        from {
-            transform: translateX(0);
-            opacity: 1;
-        }
-        to {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-    }
-    
-    .temporary-message {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        font-size: 14px;
-        font-weight: 500;
-    }
-`;
-document.head.appendChild(style);
 
 // Event binding
 document.getElementById("openDashboardBtn").addEventListener("click", openDashboardLogin);
@@ -539,8 +342,4 @@ document.getElementById("nextTabBtn").addEventListener("click", handleNext);
 document.getElementById("prevTabBtn").addEventListener("click", goPrev);
 document.querySelectorAll(".pos-tab").forEach(btn => { btn.addEventListener("click", (e) => { goToTab(btn.dataset.pos); }); });
 
-window.addEventListener("DOMContentLoaded", async () => { 
-    await loadFromStorage(); 
-    resetAuth();
-    setupLoginEnterKey();
-});
+window.addEventListener("DOMContentLoaded", async () => { await loadFromStorage(); resetAuth(); });
