@@ -8,16 +8,16 @@ const POSITIONS = {
         { id: "p2", name: "MUHAMMED RIZWAN", party: "Unity Movement", photo: "#", logo: "#" }
     ]},
     vicepresident: { name: "Vice President", candidates: [
-        { id: "vp1", name: "FATIMA ZAHRA", party: "Hope Coalition", photo: "#", logo: "#" },
-        { id: "vp2", name: "ABDULLAH K", party: "Student Voice", photo: "#", logo: "#" }
+        { id: "vp1", name: "ABDUL BASITH MM", party: "Hope Coalition", photo: "#", logo: "#" },
+        { id: "vp2", name: "AHMED YASIR MK", party: "Student Voice", photo: "#", logo: "#" }
     ]},
     secretary: { name: "Secretary", candidates: [
         { id: "s1", name: "SHAHAFAS IBI", party: "Students First", photo: "#", logo: "#" },
         { id: "s2", name: "MUHAMMED RASI A", party: "Campus Vision", photo: "#", logo: "#" }
     ]},
     joinsecretary: { name: "Joint Secretary", candidates: [
-        { id: "js1", name: "AISHA NABEELA", party: "Empower Future", photo: "#", logo: "#" },
-        { id: "js2", name: "HASAN ALI", party: "Integrity Bloc", photo: "#", logo: "#" }
+        { id: "js1", name: "HADI AMEEN P", party: "Empower Future", photo: "#", logo: "#" },
+        { id: "js2", name: "JAZIB MOHAMMED", party: "Integrity Bloc", photo: "#", logo: "#" }
     ]},
     treasurer: { name: "Treasurer", candidates: [
         { id: "t1", name: "HABEEBU RAHMAN E", party: "Economic Reform", photo: "#", logo: "#" },
