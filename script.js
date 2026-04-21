@@ -8,7 +8,7 @@ const POSITIONS = {
         { id: "p2", name: "MUHAMMED RIZWAN", party: "Unity Movement", photo: "#", logo: "#" }
     ]},
     vicepresident: { name: "Vice President", candidates: [
-        { id: "vp1", name: "ABDUL BASITH MM", party: "Hope Coalition", photo: "#", logo: "#" },
+        { id: "vp1", name: "ABDUL BASITH MM", party: "Hope Coalition", photo: "#", logo: "https://i.pinimg.com/1200x/ce/c5/a9/cec5a9feb3acb5c9ebb1c2154f4bd6a1.jpg" },
         { id: "vp2", name: "AHMED YASIR MK", party: "Student Voice", photo: "#", logo: "#" }
     ]},
     secretary: { name: "Secretary", candidates: [
