@@ -17,11 +17,11 @@ const POSITIONS = {
     ]},
     joinsecretary: { name: "Joint Secretary", candidates: [
         { id: "js1", name: "HADI AMEEN P", party: "Empower Future", photo: "#", logo: "#" },
-        { id: "js2", name: "JAZIB MOHAMMED", party: "Integrity Bloc", photo: "#", logo: "#" }
+        { id: "js2", name: "JAZIB MOHAMMED K", party: "Integrity Bloc", photo: "#", logo: "#" }
     ]},
     treasurer: { name: "Treasurer", candidates: [
         { id: "t1", name: "HABEEBU RAHMAN E", party: "Economic Reform", photo: "#", logo: "#" },
-        { id: "t2", name: "MUHAMMED SHAMIL", party: "Transparency Front", photo: "#", logo: "#" }
+        { id: "t2", name: "MUHAMMED NIHAL ON", party: "Transparency Front", photo: "#", logo: "#" }
     ]}
 };
 
