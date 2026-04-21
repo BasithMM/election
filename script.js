@@ -35,6 +35,9 @@ let currentVoter = null;
 let selections = { president: null, vicepresident: null, secretary: null, joinsecretary: null, treasurer: null };
 let currentTab = "president";
 
+// Valid voter data from JSON
+let validVoters = []; // Will store { ad_no, name }
+
 // Audio (optional)
 const clickSound = new Audio();
 const successSound = new Audio("succss.mp4");
@@ -42,6 +45,46 @@ clickSound.volume = 0.4;
 successSound.volume = 0.6;
 function playClickSound() { try { clickSound.currentTime = 0; clickSound.play().catch(()=>{}); } catch(e) {} }
 function playSuccessAudio() { try { successSound.currentTime = 0; successSound.play().catch(()=>{}); } catch(e) {} }
+
+// Load valid voters from name.json
+async function loadValidVoters() {
+    try {
+        const response = await fetch('name.json');
+        const data = await response.json();
+        validVoters = data.map(record => ({
+            ad_no: record.ad_no ? record.ad_no.toString() : null,
+            name: record.name.toUpperCase().trim()
+        }));
+        console.log(`Loaded ${validVoters.length} valid voters`);
+        return true;
+    } catch (error) {
+        console.error("Error loading name.json:", error);
+        return false;
+    }
+}
+
+// Validate voter against JSON data
+function validateVoter(admission, name) {
+    const admissionStr = admission.toString().trim();
+    const nameStr = name.toUpperCase().trim();
+    
+    const matchedVoter = validVoters.find(voter => 
+        voter.ad_no === admissionStr && voter.name === nameStr
+    );
+    
+    if (matchedVoter) {
+        return { valid: true, message: "Valid voter" };
+    }
+    
+    // Check if admission exists but name doesn't match
+    const admissionExists = validVoters.some(voter => voter.ad_no === admissionStr);
+    if (admissionExists) {
+        const correctName = validVoters.find(voter => voter.ad_no === admissionStr)?.name;
+        return { valid: false, message: `Name doesn't match Admission Number. Expected: ${correctName}` };
+    }
+    
+    return { valid: false, message: "Admission Number not found in voter list" };
+}
 
 // Excel Storage + Google Sheets sync
 function saveToLocalExcel() {
@@ -204,19 +247,51 @@ function goPrev() {
     document.getElementById("voteFeedback").innerHTML = "";
 }
 
-function authenticateVoter() {
+async function authenticateVoter() {
     const name = document.getElementById("voterName").value.trim();
     const admission = document.getElementById("admissionNo").value.trim();
     const errDiv = document.getElementById("authError");
-    if(!name || !admission) { errDiv.style.display="block"; errDiv.innerHTML="Please fill all fields"; playClickSound(); return; }
-    if(hasVoted(admission)) { errDiv.style.display="block"; errDiv.innerHTML="❌ Admission number already voted!"; playClickSound(); return; }
+    
+    if(!name || !admission) { 
+        errDiv.style.display="block"; 
+        errDiv.innerHTML="Please fill all fields"; 
+        playClickSound(); 
+        return; 
+    }
+    
+    // Check if valid voters list is loaded
+    if (validVoters.length === 0) {
+        errDiv.style.display="block"; 
+        errDiv.innerHTML="⚠️ Voter list not loaded. Please refresh the page."; 
+        playClickSound(); 
+        return;
+    }
+    
+    // Validate against JSON data
+    const validation = validateVoter(admission, name);
+    
+    if (!validation.valid) {
+        errDiv.style.display="block"; 
+        errDiv.innerHTML=`❌ ${validation.message}`; 
+        playClickSound(); 
+        return;
+    }
+    
+    // Check if already voted
+    if(hasVoted(admission)) { 
+        errDiv.style.display="block"; 
+        errDiv.innerHTML="❌ This Admission Number has already voted!"; 
+        playClickSound(); 
+        return; 
+    }
+    
     errDiv.style.display="none";
-    currentVoter = { name, admission };
+    currentVoter = { name: name.toUpperCase(), admission };
     selections = { president: null, vicepresident: null, secretary: null, joinsecretary: null, treasurer: null };
     currentTab = "president";
     document.getElementById("voterAuthArea").style.display = "none";
     document.getElementById("votingPanelArea").style.display = "block";
-    document.getElementById("voterWelcomeMsg").innerHTML = `<i class="fas fa-user-check"></i> Welcome ${name} (${admission}) — Please select candidate for each position (auto-advance).`;
+    document.getElementById("voterWelcomeMsg").innerHTML = `<i class="fas fa-user-check"></i> Welcome ${name.toUpperCase()} (${admission}) — Please select candidate for each position (auto-advance).`;
     goToTab("president");
 }
 
@@ -342,4 +417,9 @@ document.getElementById("nextTabBtn").addEventListener("click", handleNext);
 document.getElementById("prevTabBtn").addEventListener("click", goPrev);
 document.querySelectorAll(".pos-tab").forEach(btn => { btn.addEventListener("click", (e) => { goToTab(btn.dataset.pos); }); });
 
-window.addEventListener("DOMContentLoaded", async () => { await loadFromStorage(); resetAuth(); });
+// Initialize - Load valid voters first, then load storage
+window.addEventListener("DOMContentLoaded", async () => { 
+    await loadValidVoters();
+    await loadFromStorage(); 
+    resetAuth(); 
+});
