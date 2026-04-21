@@ -43,46 +43,6 @@ successSound.volume = 0.6;
 function playClickSound() { try { clickSound.currentTime = 0; clickSound.play().catch(()=>{}); } catch(e) {} }
 function playSuccessAudio() { try { successSound.currentTime = 0; successSound.play().catch(()=>{}); } catch(e) {} }
 
-async function loadStudentRegistry() {
-        try {
-            const url = `${GOOGLE_SHEETS_WEBHOOK_URL}?action=getStudents&_=${Date.now()}`;
-            const response = await fetch(url);
-            const data = await response.json();
-            if (data && data.success && data.students) {
-                authorizedVoters = data.students.map(s => ({ admissionNo: String(s["AD. NO"] || s["Admission Number"] || s["admissionNo"]), name: (s["NAME"] || s["Name"] || "").trim().toUpperCase() }));
-                console.log("Loaded students:", authorizedVoters.length);
-                return true;
-            }
-        } catch (err) { console.warn("Student registry fetch error", err); }
-        // Fallback: hardcoded demo list from provided data (ensures functionality offline)
-        const fallbackList = [
-            "361|ABDUL BASITH. PC", "366|AFNAN. M", "370|AHMAD THALHATH. PJ", "354|MUHAMMED SHAHABAS. PV", "355|MUHAMMED HASHIM. PP",
-            "350|MUHAMMED NISHAD. T", "351|MUHAMMED AFEEF. CK", "357|MUHAMMED AJSAL. VT", "330|MUHAMMED ANSHID. KK", "371|MUHAMMED HASHID.T",
-            "368|MUHAMMED IRFAN. PH", "372|MUHAMMED JURAIJ. KU", "360|MUHAMMED MAZIN. P", "367|MUHAMMED MUZAMMIL. PT", "358|MUHAMMED RAIHAN. PA",
-            "374|MUHAMMED SHIFAN. M", "369|RAZEEN AHMAD. M", "362|SHEHIN MOHAMMED. TK", "356|MUHAMMED YASEEN. TA", "352|MUHAMMED ZAYYAN. P",
-            "310|HASHIM BIN FAISAL. P", "334|MUHAMMED FARHAN. VV", "331|MUHAMMED SABAH. KP", "338|MUHAMMED SABITH. M", "337|MUHAMMED HASAN. KN",
-            "325|MUHAMMED MUSTHAFA. P", "333|MUHAMMED SHAFIN. KK", "342|MUHAMMED ADHIL. T", "326|MUHAMMED AFLAH. PN", "332|MUHAMMED ASHMIL. P",
-            "327|MUHAMMED BILAL. CS", "345|MUHAMMED HAFEEF. CP", "339|MUHAMMED MISHAL. K", "340|MUHAMMED SHAMWEEL. CP", "328|MUHAMMED SHIFAN. M",
-            "329|MUHAMMED ZAYAN. MK", "335|MUHSINE AMEEN", "336|NAZIM FAISAL. K", "347|SIRAJUDHEEN. V", "311|ADEEB RAHMAN. P", "316|AFLAH. KM",
-            "277|AHMAD FAWAS. K", "306|DHAKIR IBRAHIM. K", "302|MOHAMMED ANSHIF. K", "312|MOHAMMED RISVAN. K", "301|MUHAMMED JASIL. PK",
-            "309|MUHAMMED NAFIH. M", "305|MUHAMMED ADIL. K", "379|MUHAMMED AMEEN. AM", "322|MUHAMMED SAHAL. CP", "254|MUHAMMED SHIBILI. KT",
-            "313|MUHAMMED SWALIH. KK", "307|SALAHUDHEEN. AP", "317|WAMEEZ AHMAD. PM", "274|ANSHID. K", "282|HABEEB RAHMAN. CK", "286|MEHROOF. TN",
-            "288|MUHAMMED SINAN. PP", "272|MUHAMMED RISHAN. AP", "348|MUHAMMED SHAFIN. MN", "250|MUHAMMED SAHAL.V", "279|MUHAMMED RINSHAD. C",
-            "324|MUHAMMED ALFAN. VF", "290|MUHAMMED ASLAM. OP", "252|MUHAMMED JUNAIS. M", "271|MUHAMMED MUHSIN. O", "235|MUHAMMED UVAIS. PK",
-            "294|MUHAMMED SALIH. A", "266|MUHAMMED SINAN. U", "209|AJWAD IHSAN. P", "199|MUHAMMAD FYROOZE. KB", "178|MUHAMMED MUSHFIQ. P",
-            "200|MUHAMMED BADHUSHA. VM", "186|MUHAMMED JURAIJ. K", "210|MUHAMMED RIZWAN. KK", "185|MUHAMMED SHAHINSHA. CM", "224|MUHAMMED SHIFAN. K",
-            "177|MUHAMMED SWALIH. V", "201|SUHAIL MUHAMMED. PM", "212|ARSHID", "246|ABDUL BASITH MM", "226|AHMED YASIR MK", "255|HADHI MF",
-            "259|JAZIB MOHAMMED K", "249|MUHAMMED ANSHIF M", "241|MUHAMMED RASI A", "240|MUHAMMED RISHAM MK", "211|MUHAMMED AJSAL CM",
-            "233|ALI MUNAVVIR PA", "245|HABEEB RAHMAN E", "242|HADI AMEEN P", "253|MUHAMMED NIHAL ON", "239|MUHAMMED RIYAN K",
-            "204|NIZAMUDHEEN CK", "258|SHAHAFAS IBI", "232|SWALAHUDHEEN PS"
-        ];
-        authorizedVoters = fallbackList.map(entry => {
-            let [ad, name] = entry.split("|");
-            return { admissionNo: ad.trim(), name: (name || "").trim().toUpperCase() };
-        });
-        return true;
-    }
-    
 // Excel Storage + Google Sheets sync
 function saveToLocalExcel() {
     const sheetData = voteRecords.map(v => ({ 
