@@ -3,126 +3,135 @@
 const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbw_1WvYJajRusDd9nB5w-dGiw3OGpdKo_wwZBxLg_lgA_Akr9jJQcu6Q7CBrQtKG1yrQw/exec";
 // POSITIONS & CANDIDATES
 
-   const POSITIONS = {
+    const POSITIONS = {
         president: { name: "President", candidates: [
             { id: "p1", name: "MUHAMMED JURAIJ", party: "Progressive Alliance", photo: "#", logo: "#" },
             { id: "p2", name: "MUHAMMED RIZWAN", party: "Unity Movement", photo: "#", logo: "#" }
-        ]},
-        vicepresident: { name: "Vice President", candidates: [
-            { id: "vp1", name: "FATHIMA SHERIN", party: "Students Voice", photo: "#", logo: "#" },
-            { id: "vp2", name: "ABDUL RAHMAN K", party: "Campus Unity", photo: "#", logo: "#" }
         ]},
         secretary: { name: "Secretary", candidates: [
             { id: "s1", name: "SHAHAFAS IBI", party: "Students First", photo: "#", logo: "#" },
             { id: "s2", name: "MUHAMMED RASI A", party: "Campus Vision", photo: "#", logo: "#" }
         ]},
-        jointsecretary: { name: "Joint Secretary", candidates: [
-            { id: "js1", name: "NASEEHA BANU", party: "Equality Front", photo: "#", logo: "#" },
-            { id: "js2", name: "SAFIYA M", party: "Progressive Youth", photo: "#", logo: "#" }
-        ]},
         treasurer: { name: "Treasurer", candidates: [
             { id: "t1", name: "HABEEBU RAHMAN E", party: "Economic Reform", photo: "#", logo: "#" },
-            { id: "t2", name: "MUHAMMED NIHAL", party: "Transparency Front", photo: "#", logo: "#" }
+            { id: "t2", name: "MUHAMMED", party: "Transparency Front", photo: "#", logo: "#" }
         ]}
     };
 
-    const TAB_ORDER = ["president", "vicepresident", "secretary", "jointsecretary", "treasurer"];
-
-    let voteRecords = []; // each: { admissionNo, voterName, presidentName, vicepresidentName, secretaryName, jointsecretaryName, treasurerName, timestamp }
-    const STORAGE_KEY = "MultiPositionElectionDataV2";
+    let voteRecords = []; // each: { admissionNo,voter name, presidentId, presidentName, secretaryId, secretaryName, treasurerId, treasurerName, timestamp }
+    const STORAGE_KEY = "MultiPositionElectionData";
     let charts = {};
 
+    // Current voting session
     let currentVoter = null;
-    let selections = { president: null, vicepresident: null, secretary: null, jointsecretary: null, treasurer: null };
+    let selections = { president: null, secretary: null, treasurer: null };
     let currentTab = "president";
+    const tabOrder = ["president", "secretary", "treasurer"];
 
-    // Audio elements
-    const clickSound = new Audio();
-    const successSound = new Audio("succss.mp4");
-    clickSound.volume = 0.5;
-    successSound.volume = 0.7;
-    function playClickSound() { try { clickSound.currentTime = 0; clickSound.play().catch(()=>{}); } catch(e) {} }
-    function playSuccessAudio() { try { successSound.currentTime = 0; successSound.play().catch(()=>{}); } catch(e) {} }
+   // Audio (MP3 version)
+const clickSound = new Audio();
+const successSound = new Audio("succss.mp4");
 
-    // Helper: check if voter already voted
-    function hasVoted(admission) { return voteRecords.some(v => v.admissionNo === admission); }
+// Optional settings
+clickSound.volume = 0.5;
+successSound.volume = 0.7;
 
-    // Save to local excel backup (localStorage)
+function playClickSound() {
+    try {
+        clickSound.currentTime = 0; // restart sound
+        clickSound.play().catch(() => {});
+    } catch (e) {}
+}
+
+function playSuccessAudio() {
+    try {
+        successSound.currentTime = 0;
+        successSound.play().catch(() => {});
+    } catch (e) {}
+}
+
+    // Excel Storage
     function saveToExcel() {
-        const sheetData = voteRecords.map(v => ({ 
-            AdmissionNumber: v.admissionNo, VoterName: v.voterName, 
-            PresidentVote: v.presidentName || "", VicePresidentVote: v.vicepresidentName || "",
-            SecretaryVote: v.secretaryName || "", JointSecretaryVote: v.jointsecretaryName || "",
-            TreasurerVote: v.treasurerName || "", Timestamp: v.timestamp 
-        }));
+        const sheetData = voteRecords.map(v => ({ AdmissionNumber: v.admissionNo, VoterName: v.voterName, PresidentVote: v.presidentName, SecretaryVote: v.secretaryName, TreasurerVote: v.treasurerName, Timestamp: v.timestamp }));
         const ws = XLSX.utils.json_to_sheet(sheetData);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "MultiPositionVotes");
         localStorage.setItem(STORAGE_KEY, XLSX.write(wb, { type: 'base64' }));
     }
-
-    // Load from google sheets or fallback
     async function loadFromStorage() {
         try {
+            // First attempt to grab live data across all devices from Google Sheets
             const response = await fetch(`${GOOGLE_SHEETS_WEBHOOK_URL}?action=getResults`);
             const data = await response.json();
+            
             if (data && data.success && data.votes) {
                 voteRecords = data.votes.map(r => ({
                     admissionNo: r["Admission Number"],
                     voterName: r["Voter Name"],
                     presidentName: r["President Vote"],
-                    vicepresidentName: r["Vice President Vote"],
                     secretaryName: r["Secretary Vote"],
-                    jointsecretaryName: r["Joint Secretary Vote"],
                     treasurerName: r["Treasurer Vote"],
                     timestamp: r["Timestamp"]
                 }));
+                // Update local storage backup
                 saveToExcel();
-                return;
+                return; // successfully loaded from network
             }
-        } catch (error) { console.warn("Sheet load error", error); }
+        } catch (error) {
+            console.warn("Failed to load from Google Sheets, using LocalStorage fallback", error);
+        }
+        
+        // Offline Fallback
         const stored = localStorage.getItem(STORAGE_KEY);
-        if(stored) {
-            try {
-                const wb = XLSX.read(atob(stored), { type: 'binary' });
-                const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-                voteRecords = rows.map(r => ({
-                    admissionNo: r.AdmissionNumber, voterName: r.VoterName,
-                    presidentName: r.PresidentVote, vicepresidentName: r.VicePresidentVote,
-                    secretaryName: r.SecretaryVote, jointsecretaryName: r.JointSecretaryVote,
-                    treasurerName: r.TreasurerVote, timestamp: r.Timestamp
-                }));
-            } catch(e) { voteRecords = []; }
-        } else voteRecords = [];
+        if(stored) { try { const wb = XLSX.read(atob(stored), { type: 'binary' }); const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]); voteRecords = rows.map(r => ({ admissionNo: r.AdmissionNumber, voterName: r.VoterName, presidentName: r.PresidentVote, secretaryName: r.SecretaryVote, treasurerName: r.TreasurerVote, timestamp: r.Timestamp })); } catch(e){} }
+        else voteRecords = [];
     }
 
-    // Submit to google sheets (POST)
-    async function sendToGoogleSheets(voteData) {
-        try {
-            const formData = new URLSearchParams();
-            for (const key in voteData) if (voteData[key]) formData.append(key, voteData[key]);
-            await fetch(GOOGLE_SHEETS_WEBHOOK_URL, { method: "POST", mode: "no-cors", body: formData });
-        } catch (error) { console.error("Sheet submit error", error); }
-    }
+    function hasVoted(admission) { return voteRecords.some(v => v.admissionNo === admission); }
 
     async function submitFinalVote() {
-        if(!selections.president || !selections.vicepresident || !selections.secretary || !selections.jointsecretary || !selections.treasurer) 
-            return { success: false, message: "Please select candidates for all 5 positions!" };
-        if(hasVoted(currentVoter.admission)) return { success: false, message: "Already voted!" };
-        const voteData = {
-            admissionNo: currentVoter.admission,
-            voterName: currentVoter.name,
-            presidentName: selections.president.name,
-            vicepresidentName: selections.vicepresident.name,
-            secretaryName: selections.secretary.name,
-            jointsecretaryName: selections.jointsecretary.name,
-            treasurerName: selections.treasurer.name,
-            timestamp: new Date().toLocaleString()
-        };
-        voteRecords.push(voteData);
-        saveToExcel();
-        sendToGoogleSheets(voteData);
-        return { success: true };
+    if(!selections.president || !selections.secretary || !selections.treasurer) return false;
+
+    if(hasVoted(currentVoter.admission)) 
+        return { success: false, message: "Already voted!" };
+
+    const voteData = {
+        admissionNo: currentVoter.admission,
+        voterName: currentVoter.name,
+        presidentName: selections.president.name,
+        secretaryName: selections.secretary.name,
+        treasurerName: selections.treasurer.name,
+        timestamp: new Date().toLocaleString()
+    };
+
+    voteRecords.push(voteData);
+
+    saveToExcel();
+
+    // 🔥 SEND TO GOOGLE SHEETS
+    sendToGoogleSheets(voteData);
+
+    return { success: true };
+}
+    async function sendToGoogleSheets(voteData) {
+        try {
+            // Send as URLSearchParams (application/x-www-form-urlencoded)
+            // This guarantees that GAS e.parameter automatically parses the payload.
+            const formData = new URLSearchParams();
+            for (const key in voteData) {
+                if (voteData[key]) formData.append(key, voteData[key]);
+            }
+
+            await fetch(GOOGLE_SHEETS_WEBHOOK_URL, {
+                method: "POST",
+                mode: "no-cors",
+                body: formData
+            });
+
+            console.log("Sent to Google Sheets");
+        } catch (error) {
+            console.error("Google Sheets Error:", error);
+        }
     }
 
     // Render candidates for current tab
@@ -146,13 +155,17 @@ const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbw_1W
                 selections[currentTab] = cand;
                 renderCandidates();
                 playClickSound();
-                const idx = TAB_ORDER.indexOf(currentTab);
-                if(idx < TAB_ORDER.length-1) setTimeout(() => goToTab(TAB_ORDER[idx+1]), 300);
+                // Auto move to next tab after selection if not last
+                const currentIdx = tabOrder.indexOf(currentTab);
+                if(currentIdx < tabOrder.length-1) {
+                    setTimeout(() => goToTab(tabOrder[currentIdx+1]), 300);
+                }
             });
             container.appendChild(card);
         });
+        // Update next button text
         const nextBtn = document.getElementById("nextTabBtn");
-        if(currentTab === TAB_ORDER[TAB_ORDER.length-1]) nextBtn.textContent = "✅ Submit All Votes";
+        if(currentTab === tabOrder[tabOrder.length-1]) nextBtn.textContent = "Submit All Votes ✓";
         else nextBtn.textContent = "Next →";
     }
 
@@ -161,20 +174,19 @@ const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbw_1W
         document.querySelectorAll(".pos-tab").forEach(btn => { btn.classList.remove("active"); if(btn.dataset.pos === tab) btn.classList.add("active"); });
         renderCandidates();
         const prevBtn = document.getElementById("prevTabBtn");
-        prevBtn.disabled = (TAB_ORDER.indexOf(tab) === 0);
         const nextBtn = document.getElementById("nextTabBtn");
-        if(tab === TAB_ORDER[TAB_ORDER.length-1]) nextBtn.textContent = "✅ Submit All Votes";
+        prevBtn.disabled = (tabOrder.indexOf(tab) === 0);
+        // Update next button text
+        if(tab === tabOrder[tabOrder.length-1]) nextBtn.textContent = "Submit All Votes ✓";
         else nextBtn.textContent = "Next →";
         playClickSound();
     }
 
     async function handleNext() {
-        if(!selections[currentTab]) {
-            document.getElementById("voteFeedback").innerHTML = `<div class="info-message" style="background:#ffe0db;">⚠️ Please select a candidate for ${POSITIONS[currentTab].name}</div>`;
-            playClickSound(); return;
-        }
-        const idx = TAB_ORDER.indexOf(currentTab);
-        if(idx === TAB_ORDER.length-1) {
+        if(!selections[currentTab]) { document.getElementById("voteFeedback").innerHTML = `<div class="info-message" style="background:#ffe0db;">Please select a candidate for ${POSITIONS[currentTab].name} position!</div>`; playClickSound(); return; }
+        const currentIdx = tabOrder.indexOf(currentTab);
+        if(currentIdx === tabOrder.length-1) {
+            // Submit final vote
             const result = await submitFinalVote();
             if(result.success) {
                 playSuccessAudio();
@@ -189,12 +201,13 @@ const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbw_1W
                 playClickSound();
             }
         } else {
-            goToTab(TAB_ORDER[idx+1]);
+            goToTab(tabOrder[currentIdx+1]);
             document.getElementById("voteFeedback").innerHTML = "";
         }
     }
 
-    function goPrev() { const idx = TAB_ORDER.indexOf(currentTab); if(idx>0) goToTab(TAB_ORDER[idx-1]); document.getElementById("voteFeedback").innerHTML = ""; }
+    function goPrev() { const idx = tabOrder.indexOf(currentTab); if(idx>0) goToTab(tabOrder[idx-1]); document.getElementById("voteFeedback").innerHTML = ""; }
+
     function authenticateVoter() {
         const name = document.getElementById("voterName").value.trim();
         const admission = document.getElementById("admissionNo").value.trim();
@@ -203,45 +216,34 @@ const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbw_1W
         if(hasVoted(admission)) { errDiv.style.display="block"; errDiv.innerHTML="Already voted!"; playClickSound(); return; }
         errDiv.style.display="none";
         currentVoter = { name, admission };
-        selections = { president: null, vicepresident: null, secretary: null, jointsecretary: null, treasurer: null };
+        selections = { president: null, secretary: null, treasurer: null };
         currentTab = "president";
         document.getElementById("voterAuthArea").style.display = "none";
         document.getElementById("votingPanelArea").style.display = "block";
-        document.getElementById("voterWelcomeMsg").innerHTML = `<i class="fas fa-user-check"></i> Welcome ${name} (${admission}) — Vote for all 5 positions.`;
+        document.getElementById("voterWelcomeMsg").innerHTML = `<i class="fas fa-user-check"></i> Welcome ${name} (${admission}) — Select one candidate per position.`;
         goToTab("president");
     }
+
     function resetAuth() { document.getElementById("voterAuthArea").style.display="block"; document.getElementById("votingPanelArea").style.display="none"; currentVoter=null; document.getElementById("voterName").value=""; document.getElementById("admissionNo").value=""; document.getElementById("authError").style.display="none"; document.getElementById("voteFeedback").innerHTML=""; }
 
-    // Dashboard helpers
+    // Dashboard & Charts
     function getCountsByPosition() {
-        let pres={}, vp={}, sec={}, js={}, treas={};
+        let pres = {}, sec = {}, treas = {};
         POSITIONS.president.candidates.forEach(c => pres[c.name]=0);
-        POSITIONS.vicepresident.candidates.forEach(c => vp[c.name]=0);
         POSITIONS.secretary.candidates.forEach(c => sec[c.name]=0);
-        POSITIONS.jointsecretary.candidates.forEach(c => js[c.name]=0);
         POSITIONS.treasurer.candidates.forEach(c => treas[c.name]=0);
-        voteRecords.forEach(v => {
-            if(v.presidentName) pres[v.presidentName] = (pres[v.presidentName]||0)+1;
-            if(v.vicepresidentName) vp[v.vicepresidentName] = (vp[v.vicepresidentName]||0)+1;
-            if(v.secretaryName) sec[v.secretaryName] = (sec[v.secretaryName]||0)+1;
-            if(v.jointsecretaryName) js[v.jointsecretaryName] = (js[v.jointsecretaryName]||0)+1;
-            if(v.treasurerName) treas[v.treasurerName] = (treas[v.treasurerName]||0)+1;
-        });
-        return { pres, vp, sec, js, treas };
+        voteRecords.forEach(v => { if(v.presidentName) pres[v.presidentName] = (pres[v.presidentName]||0)+1; if(v.secretaryName) sec[v.secretaryName] = (sec[v.secretaryName]||0)+1; if(v.treasurerName) treas[v.treasurerName] = (treas[v.treasurerName]||0)+1; });
+        return { pres, sec, treas };
     }
 
     function updateCharts() {
         const counts = getCountsByPosition();
         if(charts.president) charts.president.destroy();
-        if(charts.vicepresident) charts.vicepresident.destroy();
         if(charts.secretary) charts.secretary.destroy();
-        if(charts.jointsecretary) charts.jointsecretary.destroy();
         if(charts.treasurer) charts.treasurer.destroy();
-        charts.president = new Chart(document.getElementById("presidentChart"), { type: 'bar', data: { labels: Object.keys(counts.pres), datasets: [{ label: 'Votes', data: Object.values(counts.pres), backgroundColor: '#1f6e43' }] }, options: { responsive: true } });
-        charts.vicepresident = new Chart(document.getElementById("vicepresidentChart"), { type: 'bar', data: { labels: Object.keys(counts.vp), datasets: [{ label: 'Votes', data: Object.values(counts.vp), backgroundColor: '#3498db' }] }, options: { responsive: true } });
-        charts.secretary = new Chart(document.getElementById("secretaryChart"), { type: 'bar', data: { labels: Object.keys(counts.sec), datasets: [{ label: 'Votes', data: Object.values(counts.sec), backgroundColor: '#2c7da0' }] }, options: { responsive: true } });
-        charts.jointsecretary = new Chart(document.getElementById("jointsecretaryChart"), { type: 'bar', data: { labels: Object.keys(counts.js), datasets: [{ label: 'Votes', data: Object.values(counts.js), backgroundColor: '#8e44ad' }] }, options: { responsive: true } });
-        charts.treasurer = new Chart(document.getElementById("treasurerChart"), { type: 'bar', data: { labels: Object.keys(counts.treas), datasets: [{ label: 'Votes', data: Object.values(counts.treas), backgroundColor: '#e67e22' }] }, options: { responsive: true } });
+        charts.president = new Chart(document.getElementById("presidentChart"), { type: 'bar', data: { labels: Object.keys(counts.pres), datasets: [{ label: 'Votes', data: Object.values(counts.pres), backgroundColor: '#1f6e43', borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: true } });
+        charts.secretary = new Chart(document.getElementById("secretaryChart"), { type: 'bar', data: { labels: Object.keys(counts.sec), datasets: [{ label: 'Votes', data: Object.values(counts.sec), backgroundColor: '#2c7da0', borderRadius: 8 }] }, options: { responsive: true } });
+        charts.treasurer = new Chart(document.getElementById("treasurerChart"), { type: 'bar', data: { labels: Object.keys(counts.treas), datasets: [{ label: 'Votes', data: Object.values(counts.treas), backgroundColor: '#e67e22', borderRadius: 8 }] }, options: { responsive: true } });
     }
 
     function renderDashboard() {
@@ -249,23 +251,15 @@ const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbw_1W
         const totalVoters = voteRecords.length;
         const totalUnique = new Set(voteRecords.map(v=>v.admissionNo)).size;
         let presWinner = Object.entries(counts.pres).sort((a,b)=>b[1]-a[1])[0];
-        let vpWinner = Object.entries(counts.vp).sort((a,b)=>b[1]-a[1])[0];
         let secWinner = Object.entries(counts.sec).sort((a,b)=>b[1]-a[1])[0];
-        let jsWinner = Object.entries(counts.js).sort((a,b)=>b[1]-a[1])[0];
         let treasWinner = Object.entries(counts.treas).sort((a,b)=>b[1]-a[1])[0];
-        document.getElementById("dashStats").innerHTML = `<div class="stats-grid">
-            <div class="stat-card"><div class="stat-number">${totalVoters}</div><div>Total Votes</div></div>
-            <div class="stat-card"><div class="stat-number">${totalUnique}</div><div>Unique Voters</div></div>
-            <div class="stat-card"><div class="stat-number">${presWinner?.[0]||'—'}</div><div>President Leader</div></div>
-            <div class="stat-card"><div class="stat-number">${vpWinner?.[0]||'—'}</div><div>Vice President Leader</div></div>
-            <div class="stat-card"><div class="stat-number">${secWinner?.[0]||'—'}</div><div>Secretary Leader</div></div>
-            <div class="stat-card"><div class="stat-number">${jsWinner?.[0]||'—'}</div><div>Joint Secretary Leader</div></div>
-            <div class="stat-card"><div class="stat-number">${treasWinner?.[0]||'—'}</div><div>Treasurer Leader</div></div>
-        </div>`;
+        document.getElementById("dashStats").innerHTML = `<div class="stats-grid"><div class="stat-card"><div class="stat-number">${totalVoters}</div><div>Total Votes Cast</div></div><div class="stat-card"><div class="stat-number">${totalUnique}</div><div>Unique Voters</div></div><div class="stat-card"><div class="stat-number">${presWinner?.[0]||'—'}</div><div>President Leader</div></div><div class="stat-card"><div class="stat-number">${secWinner?.[0]||'—'}
+                                                          </div><div>Secretary Leader</div></div><div class="stat-card"><div class="stat-number">${treasWinner?.[0]||'—'}
+                                                          </div><div>Treasurer Leader</div></div></div>`;
         let tableHtml = `<table class="result-table"><thead><tr><th>Position</th><th>Candidate</th><th>Party</th><th>Votes</th></tr></thead><tbody>`;
-        for(let pos of ['president','vicepresident','secretary','jointsecretary','treasurer']){
+        for(let pos of ['president','secretary','treasurer']){
             let cands = POSITIONS[pos].candidates;
-            let countMap = counts[pos === 'president' ? 'pres' : (pos === 'vicepresident' ? 'vp' : (pos === 'secretary' ? 'sec' : (pos === 'jointsecretary' ? 'js' : 'treas')))];
+            let countMap = pos==='president'?counts.pres:(pos==='secretary'?counts.sec:counts.treas);
             cands.forEach(c=>{ tableHtml += `<tr><td>${POSITIONS[pos].name}</td><td>${c.name}</td><td>${c.party}</td><td><span class="vote-badge">${countMap[c.name]||0}</span></td></tr>`; });
         }
         tableHtml += `</tbody></table>`;
@@ -274,24 +268,35 @@ const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbw_1W
     }
 
     async function downloadVoterExcel() {
+        playClickSound();
         const btn = document.getElementById("downloadVoterExcelBtn");
-        const original = btn.innerText;
+        const originalText = btn.innerText || "Download Excel";
         btn.innerText = "Downloading...";
         btn.disabled = true;
+
         try {
+            // GET requests to Apps Script from the browser automatically handle CORS allowing us to read the response.
             const response = await fetch(`${GOOGLE_SHEETS_WEBHOOK_URL}?action=getResults`);
             const data = await response.json();
+            
             if (data && data.success && data.votes) {
                 const ws = XLSX.utils.json_to_sheet(data.votes);
                 const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "ElectionResults");
-                XLSX.writeFile(wb, `ElectionData_${new Date().toISOString().slice(0,19)}.xlsx`);
-            } else alert("Could not fetch latest data");
-        } catch(e) { alert("Export error"); }
-        finally { btn.innerText = original; btn.disabled = false; }
+                XLSX.utils.book_append_sheet(wb, ws, "VoterList");
+                XLSX.writeFile(wb, `GoogleSheets_VoterList_${new Date().toISOString().slice(0,19)}.xlsx`);
+            } else {
+                alert("Could not process downloaded data.");
+            }
+        } catch (error) {
+            console.error("Download Error:", error);
+            alert("Error downloading data from Google Sheets.");
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
     }
 
-    // Dashboard modal logic
+    // Dashboard Modal Logic
     const modalOverlay = document.getElementById("dashboardModal");
     const dashboardPanel = document.getElementById("dashboardPanel");
     function openDashboardLogin() { modalOverlay.classList.add("active"); playClickSound(); }
@@ -304,20 +309,19 @@ const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbw_1W
             loadFromStorage().then(()=>{ renderDashboard(); dashboardPanel.classList.add("active"); playClickSound(); });
         } else { document.getElementById("dashboardLoginError").innerText = "Invalid credentials!"; playClickSound(); }
     }
-    function refreshExcel() { localStorage.removeItem(STORAGE_KEY); loadFromStorage().then(()=>{ renderDashboard(); alert("Data refreshed"); }); }
+    function refreshExcel() { localStorage.removeItem(STORAGE_KEY); loadFromStorage().then(()=>{ renderDashboard(); alert("Excel data refreshed"); }); }
 
-    // Event listeners
+    // Event Listeners
     document.getElementById("openDashboardBtn").addEventListener("click", openDashboardLogin);
     document.getElementById("submitDashboardLogin").addEventListener("click", validateDashboardLogin);
     document.getElementById("closeModalBtn").addEventListener("click", closeLoginModal);
     document.getElementById("closeDashboardPanelBtn").addEventListener("click", closeDashboardPanel);
-    document.getElementById("closeDashboardPanelBtn2").addEventListener("click", closeDashboardPanel);
     document.getElementById("refreshExcelBtn").addEventListener("click", refreshExcel);
     document.getElementById("downloadVoterExcelBtn").addEventListener("click", downloadVoterExcel);
     document.getElementById("authenticateBtn").addEventListener("click", authenticateVoter);
     document.getElementById("resetVoteBtn").addEventListener("click", resetAuth);
     document.getElementById("nextTabBtn").addEventListener("click", handleNext);
     document.getElementById("prevTabBtn").addEventListener("click", goPrev);
-    document.querySelectorAll(".pos-tab").forEach(btn => { btn.addEventListener("click", () => goToTab(btn.dataset.pos)); });
+    document.querySelectorAll(".pos-tab").forEach(btn => { btn.addEventListener("click", (e) => { goToTab(btn.dataset.pos); }); });
 
     window.addEventListener("DOMContentLoaded", async () => { await loadFromStorage(); resetAuth(); });
