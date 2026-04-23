@@ -35,8 +35,8 @@ let currentVoter = null;
 let selections = { president: null, vicepresident: null, secretary: null, joinsecretary: null, treasurer: null };
 let currentTab = "president";
 
-// Voter database from JSON file
-let voterDatabase = []; // Stores { ad_no, name }
+// Valid voter data from JSON
+let validVoters = []; // Will store { ad_no, name }
 
 // Audio (optional)
 const clickSound = new Audio();
@@ -46,36 +46,44 @@ successSound.volume = 0.6;
 function playClickSound() { try { clickSound.currentTime = 0; clickSound.play().catch(()=>{}); } catch(e) {} }
 function playSuccessAudio() { try { successSound.currentTime = 0; successSound.play().catch(()=>{}); } catch(e) {} }
 
-// Load voter database from name.json
-async function loadVoterDatabase() {
+// Load valid voters from name.json
+async function loadValidVoters() {
     try {
         const response = await fetch('name.json');
         const data = await response.json();
-        voterDatabase = data;
-        console.log(`Loaded ${voterDatabase.length} voters from database`);
+        validVoters = data.map(record => ({
+            ad_no: record.ad_no ? record.ad_no.toString() : null,
+            name: record.name.toUpperCase().trim()
+        }));
+        console.log(`Loaded ${validVoters.length} valid voters`);
         return true;
     } catch (error) {
-        console.error('Failed to load voter database:', error);
+        console.error("Error loading name.json:", error);
         return false;
     }
 }
 
-// Validate voter credentials against name.json
-function validateVoterCredentials(admissionNo, name) {
-    // Convert both to string for comparison and trim whitespace
-    const admissionStr = String(admissionNo).trim();
-    const nameStr = name.trim().toUpperCase();
+// Validate voter against JSON data
+function validateVoter(admission, name) {
+    const admissionStr = admission.toString().trim();
+    const nameStr = name.toUpperCase().trim();
     
-    const voter = voterDatabase.find(v => {
-        const dbAdmission = String(v.ad_no).trim();
-        const dbName = v.name.trim().toUpperCase();
-        return dbAdmission === admissionStr && dbName === nameStr;
-    });
+    const matchedVoter = validVoters.find(voter => 
+        voter.ad_no === admissionStr && voter.name === nameStr
+    );
     
-    if (voter) {
-        return { valid: true, name: voter.name, admission: voter.ad_no };
+    if (matchedVoter) {
+        return { valid: true, message: "Valid voter" };
     }
-    return { valid: false, message: "Invalid Admission Number or Name. Please check your credentials." };
+    
+    // Check if admission exists but name doesn't match
+    const admissionExists = validVoters.some(voter => voter.ad_no === admissionStr);
+    if (admissionExists) {
+        const correctName = validVoters.find(voter => voter.ad_no === admissionStr)?.name;
+        return { valid: false, message: `Name doesn't match Admission Number. Expected: ${correctName}` };
+    }
+    
+    return { valid: false, message: "Admission Number not found in voter list" };
 }
 
 // Excel Storage + Google Sheets sync
@@ -246,13 +254,22 @@ async function authenticateVoter() {
     
     if(!name || !admission) { 
         errDiv.style.display="block"; 
-        errDiv.innerHTML="⚠️ Please fill all fields"; 
+        errDiv.innerHTML="Please fill all fields"; 
         playClickSound(); 
         return; 
     }
     
-    // First validate against name.json database
-    const validation = validateVoterCredentials(admission, name);
+    // Check if valid voters list is loaded
+    if (validVoters.length === 0) {
+        errDiv.style.display="block"; 
+        errDiv.innerHTML="⚠️ Voter list not loaded. Please refresh the page."; 
+        playClickSound(); 
+        return;
+    }
+    
+    // Validate against JSON data
+    const validation = validateVoter(admission, name);
+    
     if (!validation.valid) {
         errDiv.style.display="block"; 
         errDiv.innerHTML=`❌ ${validation.message}`; 
@@ -263,18 +280,18 @@ async function authenticateVoter() {
     // Check if already voted
     if(hasVoted(admission)) { 
         errDiv.style.display="block"; 
-        errDiv.innerHTML="❌ This admission number has already cast their vote!"; 
+        errDiv.innerHTML="❌ This Admission Number has already voted!"; 
         playClickSound(); 
         return; 
     }
     
     errDiv.style.display="none";
-    currentVoter = { name: validation.name, admission: validation.admission };
+    currentVoter = { name: name.toUpperCase(), admission };
     selections = { president: null, vicepresident: null, secretary: null, joinsecretary: null, treasurer: null };
     currentTab = "president";
     document.getElementById("voterAuthArea").style.display = "none";
     document.getElementById("votingPanelArea").style.display = "block";
-    document.getElementById("voterWelcomeMsg").innerHTML = `<i class="fas fa-user-check"></i> Welcome ${validation.name} (${validation.admission}) — Please select a candidate for each position.`;
+    document.getElementById("voterWelcomeMsg").innerHTML = `<i class="fas fa-user-check"></i> Welcome ${name.toUpperCase()} (${admission}) — Please select candidate for each position (auto-advance).`;
     goToTab("president");
 }
 
@@ -325,20 +342,14 @@ function renderDashboard() {
     const counts = getCountsByPosition();
     const totalVotes = voteRecords.length;
     const uniqueVoters = new Set(voteRecords.map(v=>v.admissionNo)).size;
-    const totalEligibleVoters = voterDatabase.length;
-    const pendingVotes = totalEligibleVoters - uniqueVoters;
     const presLeader = Object.entries(counts.pres).sort((a,b)=>b[1]-a[1])[0];
     const vpLeader = Object.entries(counts.vp).sort((a,b)=>b[1]-a[1])[0];
     const secLeader = Object.entries(counts.sec).sort((a,b)=>b[1]-a[1])[0];
     const jsLeader = Object.entries(counts.js).sort((a,b)=>b[1]-a[1])[0];
     const treasLeader = Object.entries(counts.treas).sort((a,b)=>b[1]-a[1])[0];
-    
     document.getElementById("dashStats").innerHTML = `<div class="stats-grid">
-        <div class="stat-card"><div class="stat-number">${totalVotes}</div><div>Total Votes Cast</div></div>
+        <div class="stat-card"><div class="stat-number">${totalVotes}</div><div>Total Votes</div></div>
         <div class="stat-card"><div class="stat-number">${uniqueVoters}</div><div>Unique Voters</div></div>
-        <div class="stat-card"><div class="stat-number">${totalEligibleVoters}</div><div>Eligible Voters</div></div>
-        <div class="stat-card"><div class="stat-number">${pendingVotes}</div><div>Pending Votes</div></div>
-        <div class="stat-card"><div class="stat-number">${((uniqueVoters/totalEligibleVoters)*100).toFixed(1)}%</div><div>Turnout</div></div>
         <div class="stat-card"><div class="stat-number">${presLeader?.[0]||'—'}</div><div>President Leader</div></div>
         <div class="stat-card"><div class="stat-number">${vpLeader?.[0]||'—'}</div><div>Vice President Leader</div></div>
         <div class="stat-card"><div class="stat-number">${secLeader?.[0]||'—'}</div><div>Secretary Leader</div></div>
@@ -406,9 +417,9 @@ document.getElementById("nextTabBtn").addEventListener("click", handleNext);
 document.getElementById("prevTabBtn").addEventListener("click", goPrev);
 document.querySelectorAll(".pos-tab").forEach(btn => { btn.addEventListener("click", (e) => { goToTab(btn.dataset.pos); }); });
 
-// Initialize application
+// Initialize - Load valid voters first, then load storage
 window.addEventListener("DOMContentLoaded", async () => { 
-    await loadVoterDatabase(); // Load voter database first
+    await loadValidVoters();
     await loadFromStorage(); 
     resetAuth(); 
 });
