@@ -298,7 +298,8 @@
             color: #5a6e7c; 
             font-size: 0.8rem; }
         .huda{
-            padding: 100px;
+           width: -100px;
+           height: -100px;
         }    
         @media (max-width: 700px) { .glass-card { padding: 1rem; } }
         .error-text { color: #dc2626; margin-top: 8px; }
