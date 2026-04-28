@@ -4,24 +4,24 @@ const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxQpG
 // 5 POSITIONS WITH 2 CANDIDATES EACH
 const POSITIONS = {
     president: { name: "President", candidates: [
-        { id: "p1", name: "MUHAMMED JURAIJ", party: "ADF Party", photo: "image/juraij.jpg", logo: "image/favvvv.png" },
-        { id: "p2", name: "MUHAMMED RIZWAN", party: "HDF Party", photo: "image/riswan.jpg", logo: "#" }
+        { id: "p1", name: "MUHAMMED JURAIJ", party: "ADF Party", photo: "image/juraij.jpg", logo: "logo/pen.png" },
+        { id: "p2", name: "MUHAMMED RIZWAN", party: "HDF Party", photo: "image/riswan.jpg", logo: "logo/phone.png" }
     ]},
     vicepresident: { name: "Vice President", candidates: [
         { id: "vp1", name: "ABDUL BASITH MM", party: "ADF Party", photo: "image/basith.jpg", logo: "https://i.pinimg.com/1200x/ce/c5/a9/cec5a9feb3acb5c9ebb1c2154f4bd6a1.jpg" },
-        { id: "vp2", name: "AHMED YASIR MK", party: "HDF Party", photo: "image/nn.jpg", logo: "#" }
+        { id: "vp2", name: "AHMED YASIR MK", party: "HDF Party", photo: "image/nn.jpg", logo: "logo/ball.png" }
     ]},
     secretary: { name: "Secretary", candidates: [
-        { id: "s1", name: "SHAHAFAS IBI", party: "HDF Party", photo: "image/shahafas.jpg", logo: "#" },
-        { id: "s2", name: "MUHAMMED RASI A", party: "ADF Party", photo: "image/razi.jpg", logo: "#" }
+        { id: "s1", name: "SHAHAFAS IBI", party: "HDF Party", photo: "image/shahafas.jpg", logo: "logo/dumbell.png" },
+        { id: "s2", name: "MUHAMMED RASI A", party: "ADF Party", photo: "image/razi.jpg", logo: "logo/bat.png" }
     ]},
     joinsecretary: { name: "Joint Secretary", candidates: [
-        { id: "js1", name: "HADI AMEEN P", party: "HDF Party", photo: "image/hadi ameen.jpg", logo: "#" },
-        { id: "js2", name: "JAZIB MOHAMMED K", party: "ADF Party", photo: "image/jazib.jpg", logo: "#" }
+        { id: "js1", name: "HADI AMEEN P", party: "HDF Party", photo: "image/hadi ameen.jpg", logo: "logo/specs.png" },
+        { id: "js2", name: "JAZIB MOHAMMED K", party: "ADF Party", photo: "image/jazib.jpg", logo: "logo/apple.png" }
     ]},
     treasurer: { name: "Treasurer", candidates: [
-        { id: "t1", name: "HABEEBU RAHMAN E", party: "HDF Party", photo: "#", logo: "#" },
-        { id: "t2", name: "MUHAMMED NIHAL ON", party: "ADF Party", photo: "image/nihal.jpg", logo: "#" }
+        { id: "t1", name: "HABEEBU RAHMAN E", party: "HDF Party", photo: "#", logo: "logo/camera.png" },
+        { id: "t2", name: "MUHAMMED NIHAL ON", party: "ADF Party", photo: "image/nihal.jpg", logo: "logo/book.png" }
     ]}
 };
 
