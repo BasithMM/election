@@ -9,7 +9,7 @@ const POSITIONS = {
     ]},
     vicepresident: { name: "Vice President", candidates: [
         { id: "vp1", name: "ABDUL BASITH MM", party: "ADF Party", photo: "#", logo: "https://i.pinimg.com/1200x/ce/c5/a9/cec5a9feb3acb5c9ebb1c2154f4bd6a1.jpg" },
-        { id: "vp2", name: "AHMED YASIR MK", party: "HDF Party", photo: "#", logo: "#" }
+        { id: "vp2", name: "AHMED YASIR MK", party: "HDF Party", photo: "image/nn.jpg", logo: "#" }
     ]},
     secretary: { name: "Secretary", candidates: [
         { id: "s1", name: "SHAHAFAS IBI", party: "ADF Party", photo: "#", logo: "#" },
